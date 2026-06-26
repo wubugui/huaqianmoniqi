@@ -593,6 +593,8 @@ let state = loadState();
 let callTimer = 0;
 let tutorialHangupTimer = 0;
 let renderedAppId = state.activeApp || "home";
+let moneyFeedbackTimer = 0;
+let activeMoneyFeedback = null;
 const scrollMemory = new Map();
 const cashSwipe = {
   active: false,
@@ -854,9 +856,53 @@ function renderSpendFlags(item) {
   return `<div class="spend-flags">${flags.map((flag) => `<span>${flag}</span>`).join("")}</div>`;
 }
 
-function addNotice(text) {
-  state.notifications.unshift({ id: makeId(), time: nowTime(), text });
+function addNotice(text, extra = {}) {
+  state.notifications.unshift({ id: makeId(), time: nowTime(), text, ...extra });
   state.notifications = state.notifications.slice(0, 40);
+}
+
+function addPhoneMessage(from, text) {
+  state.messages.unshift({ id: makeId(), from, to: "我", text, time: nowTime() });
+  state.messages = state.messages.slice(0, 80);
+}
+
+function triggerMoneyFeedback({ title, amount, channel, detail = "", balance = "", source = "MoneyOS", tone = "out" }) {
+  const cleanAmount = Math.max(1, Math.floor(Number(amount) || 0));
+  const feedback = {
+    id: makeId(),
+    title,
+    amount: cleanAmount,
+    channel,
+    detail,
+    balance,
+    source,
+    tone,
+    time: nowTime(),
+  };
+  activeMoneyFeedback = feedback;
+
+  addNotice(`${source}：${title} -${money(cleanAmount)}`, {
+    kind: "money",
+    amount: cleanAmount,
+    channel,
+    tone,
+  });
+  addPhoneMessage(source, `${title}支出 ${money(cleanAmount)}。${channel ? `渠道：${channel}。` : ""}${balance ? `${balance}。` : ""}${detail ? `备注：${detail}` : ""}`);
+
+  if (window.navigator?.vibrate) window.navigator.vibrate(tone === "danger" ? [30, 35, 30, 35, 60] : [18, 28, 18]);
+  if (el.phoneShell) {
+    el.phoneShell.classList.remove("money-shock", "money-shock-danger");
+    void el.phoneShell.offsetWidth;
+    el.phoneShell.classList.add("money-shock");
+    if (tone === "danger") el.phoneShell.classList.add("money-shock-danger");
+  }
+
+  window.clearTimeout(moneyFeedbackTimer);
+  moneyFeedbackTimer = window.setTimeout(() => {
+    activeMoneyFeedback = null;
+    el.phoneShell?.classList.remove("money-shock", "money-shock-danger");
+    render();
+  }, 1800);
 }
 
 function monthKey() {
@@ -1017,8 +1063,15 @@ function payFromCard(amount, title, category, detail = "", options = {}) {
     cardNumber: card.number,
     detail,
   });
-  addNotice(`${title} 支付 ${money(cleanAmount)}`);
   if (options.advanceTime !== false) advanceGameDay(title);
+  triggerMoneyFeedback({
+    title,
+    amount: cleanAmount,
+    channel: `${card.name} 尾号${card.number.slice(-4)}`,
+    detail: detail || category,
+    balance: `银行卡余额 ${money(card.balance)}`,
+    source: "XX银行",
+  });
   return { card, amount: cleanAmount };
 }
 
@@ -1066,8 +1119,15 @@ function chargeCredit(amount, title, category, detail = "", extra = {}) {
     status: extra.status || "待还款",
     detail,
   });
-  addNotice(`${title} 使用信用额度 ${money(cleanAmount)}`);
   if (extra.advanceTime !== false) advanceGameDay(title);
+  triggerMoneyFeedback({
+    title,
+    amount: cleanAmount,
+    channel: "信用额度",
+    detail: detail || category,
+    balance: `待还 ${money(state.credit.used)}，可用 ${money(creditAvailable())}`,
+    source: "信用中心",
+  });
   return { credit: true, amount: cleanAmount };
 }
 
@@ -1308,7 +1368,7 @@ function render() {
     security: renderSecurityApp,
   };
 
-  el.screen.innerHTML = `${(views[state.activeApp] || renderHome)()}${renderCheckoutSheet()}${renderTutorialOverlay()}`;
+  el.screen.innerHTML = `${(views[state.activeApp] || renderHome)()}${renderCheckoutSheet()}${renderMoneyFeedback()}${renderTutorialOverlay()}`;
   renderedAppId = state.activeApp;
   restoreScrollPositions(renderedAppId);
   syncTutorialChrome();
@@ -1334,6 +1394,7 @@ function renderHome() {
         <strong>${money(state.cashBalance)}</strong>
         <small>只能转进银行卡，不能直接花。${state.cards.length ? `${state.cards.length} 张银行卡` : "还没有银行卡"}</small>
       </div>
+      ${renderNotificationWidget()}
       <nav class="desktop-grid" aria-label="已安装 App">
         ${installedApps
           .map((app) => {
@@ -1359,6 +1420,45 @@ function renderHome() {
 
 function appIdByName(name) {
   return Object.keys(apps).find((id) => apps[id].name === name) || "home";
+}
+
+function renderNotificationWidget() {
+  const latest = state.notifications.slice(0, 3);
+  if (!latest.length) return "";
+  return `
+    <section class="notification-widget" aria-label="最近手机通知">
+      <div>
+        <span>最近通知</span>
+        <strong>${latest[0].kind === "money" ? "刚刚有钱动了" : "手机有动静"}</strong>
+      </div>
+      ${latest
+        .map(
+          (notice) => `
+            <article class="notification-row ${notice.kind === "money" ? "money-row" : ""}">
+              <b>${notice.kind === "money" ? "¥" : "!"}</b>
+              <p>${escapeHtml(notice.text)}<span>${escapeHtml(notice.time)}</span></p>
+            </article>
+          `,
+        )
+        .join("")}
+    </section>
+  `;
+}
+
+function renderMoneyFeedback() {
+  if (!activeMoneyFeedback) return "";
+  const feedback = activeMoneyFeedback;
+  return `
+    <aside class="money-feedback ${feedback.tone === "danger" ? "danger-feedback" : ""}" aria-live="assertive">
+      <div class="feedback-icon">${feedback.tone === "danger" ? "!" : "¥"}</div>
+      <div>
+        <span>${escapeHtml(feedback.source)} · ${escapeHtml(feedback.time)}</span>
+        <strong>-${money(feedback.amount)}</strong>
+        <p>${escapeHtml(feedback.title)}</p>
+        <small>${escapeHtml([feedback.channel, feedback.balance].filter(Boolean).join(" · "))}</small>
+      </div>
+    </aside>
+  `;
 }
 
 function renderCashApp() {
@@ -3249,9 +3349,16 @@ function buyNumber() {
   state.carrierBalance += FIRST_NUMBER_TOP_UP;
   state.phonePlan = { ...structuredClone(defaultState.phonePlan), status: "已办号，未办套餐" };
   state.messages.unshift({ id: makeId(), from: "营业厅", to: "我", text: `你的手机号 ${state.phoneNumber} 已开通，并从点钞 App 自动扣 ${money(FIRST_NUMBER_TOP_UP)} 充入话费。现在必须办理套餐，否则手机还是砖头。`, time: nowTime() });
-  addNotice(`手机号已办理，自动首充 ${money(FIRST_NUMBER_TOP_UP)}`);
   advanceGameDay("办理电话卡");
   advanceTutorial("buyNumber");
+  triggerMoneyFeedback({
+    title: "手机号自动首充",
+    amount: FIRST_NUMBER_TOP_UP,
+    channel: "点钞余额",
+    detail: `手机号 ${state.phoneNumber} 开通`,
+    balance: `点钞余额 ${money(state.cashBalance)}，话费余额 ${money(state.carrierBalance)}`,
+    source: "营业厅",
+  });
   render();
 }
 
@@ -3309,9 +3416,16 @@ function buyPlan(planId = "basic") {
   );
   state.messages.unshift({ id: makeId(), from: "营业厅", to: "我", text: `${plan.name} 已生效。本月其他软件可以使用；下个月请手动续费。`, time: nowTime() });
   state.messages = state.messages.slice(0, 80);
-  addNotice(`${plan.name} 已办理`);
   advanceGameDay("办理手机套餐");
   advanceTutorial("buyPlan", plan.id);
+  triggerMoneyFeedback({
+    title: plan.name,
+    amount: plan.price,
+    channel: "话费余额",
+    detail: "手机套餐本月生效",
+    balance: `话费余额 ${money(state.carrierBalance)}`,
+    source: "营业厅",
+  });
   render();
 }
 
@@ -3371,7 +3485,15 @@ function transferToCard() {
   const card = cardByNumber(state.transferDraft.cardNumber);
   if (!card) {
     state.stats.lostTransfers += 1;
-    addNotice(`${money(amount)} 已转入虚空：卡号输错。`);
+    triggerMoneyFeedback({
+      title: "输错卡号转账",
+      amount,
+      channel: "虚空账户",
+      detail: "钱已经离开点钞 App，收款卡不存在",
+      balance: `点钞余额 ${money(state.cashBalance)}`,
+      source: "虚空银行",
+      tone: "danger",
+    });
     render();
     return;
   }
@@ -4162,23 +4284,32 @@ function makeCall() {
     render();
     return;
   }
+  const dialedNumber = state.dialNumber;
   state.carrierBalance -= CALL_FEE;
   state.stats.communicationFees += CALL_FEE;
   const result = Math.random() > 0.45 ? "已接通" : "无人接听";
-  state.calls.unshift({ id: makeId(), number: state.dialNumber, type: "呼出", result, time: nowTime() });
+  state.calls.unshift({ id: makeId(), number: dialedNumber, type: "呼出", result, time: nowTime() });
   state.stats.callsMade += 1;
   addServiceRecord(
     "carrier",
     {
       name: "语音通话费",
-      desc: `拨打 ${state.dialNumber}`,
+      desc: `拨打 ${dialedNumber}`,
       status: `已扣话费 ${money(CALL_FEE)}`,
       tag: "通话",
     },
     { amount: CALL_FEE, card: { name: "话费余额", number: "carrier" } },
   );
-  state.dialNumber = "";
   advanceGameDay("语音通话");
+  triggerMoneyFeedback({
+    title: "语音通话费",
+    amount: CALL_FEE,
+    channel: "话费余额",
+    detail: `拨打 ${dialedNumber} · ${result}`,
+    balance: `话费余额 ${money(state.carrierBalance)}`,
+    source: "营业厅",
+  });
+  state.dialNumber = "";
   render();
 }
 
@@ -4231,8 +4362,15 @@ function sendSms() {
     { amount: SMS_FEE, card: { name: "话费余额", number: "carrier" } },
   );
   state.smsDraft.text = "";
-  addNotice("短信已发送");
   advanceGameDay("发送短信");
+  triggerMoneyFeedback({
+    title: "短信通信费",
+    amount: SMS_FEE,
+    channel: "话费余额",
+    detail: `发送到 ${state.smsDraft.to}`,
+    balance: `话费余额 ${money(state.carrierBalance)}`,
+    source: "营业厅",
+  });
   render();
 }
 
