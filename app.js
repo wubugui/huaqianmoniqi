@@ -85,6 +85,20 @@ const foodCoupons = [
 const foodPhysicalTags = new Set(["外卖", "聚餐", "买菜", "跑腿", "即时零售"]);
 const foodPickupTags = new Set(["自取", "团购", "订座"]);
 
+const moneyCountryNodes = [
+  { id: "northport", name: "北港", kind: "港口", x: 18, y: 18 },
+  { id: "snowcapital", name: "雪京", kind: "首都", x: 47, y: 12 },
+  { id: "ironwest", name: "铁西", kind: "工业城", x: 12, y: 48 },
+  { id: "cloudhub", name: "云仓", kind: "国家分拨中心", x: 45, y: 42 },
+  { id: "rivercity", name: "江城", kind: "中转城", x: 67, y: 36 },
+  { id: "flowerbay", name: "花湾", kind: "电商城", x: 82, y: 58 },
+  { id: "southmarket", name: "南市", kind: "批发城", x: 52, y: 78 },
+  { id: "shanghai", name: "MoneyOS 小区", kind: "收货地", x: 74, y: 82 },
+];
+
+const shippingCategories = new Set(["shop", "logistics", "secondhand", "parenting", "pets", "tickets", "rental"]);
+const shippingKeywords = ["快递", "发货", "寄", "配送", "纸质", "教材", "设备", "套装", "票", "租赁", "退货", "保价"];
+
 const spendCatalogs = {
   store: [
     { id: "paid-app", name: "付费效率 App", price: 68, tag: "付费下载", desc: "一次买断的效率工具，下载后不可退订但可以后悔。", status: "付费 App 已购买" },
@@ -502,6 +516,8 @@ const defaultState = {
   orders: [],
   bookings: [],
   serviceRecords: [],
+  shipments: [],
+  lifeEvents: [],
   refunds: [],
   holds: [],
   subscriptions: [],
@@ -641,6 +657,8 @@ function loadState() {
       orders: Array.isArray(parsed.orders) ? parsed.orders.slice(0, 100) : [],
       bookings: Array.isArray(parsed.bookings) ? parsed.bookings.slice(0, 60) : [],
       serviceRecords: Array.isArray(parsed.serviceRecords) ? parsed.serviceRecords.slice(0, 80) : [],
+      shipments: Array.isArray(parsed.shipments) ? parsed.shipments.slice(0, 80) : [],
+      lifeEvents: Array.isArray(parsed.lifeEvents) ? parsed.lifeEvents.slice(0, 80) : [],
       refunds: Array.isArray(parsed.refunds) ? parsed.refunds.slice(0, 60) : [],
       holds: Array.isArray(parsed.holds) ? parsed.holds.slice(0, 60) : [],
       subscriptions: Array.isArray(parsed.subscriptions) ? parsed.subscriptions.slice(0, 60) : [],
@@ -905,6 +923,234 @@ function triggerMoneyFeedback({ title, amount, channel, detail = "", balance = "
   }, 1800);
 }
 
+function hashText(value) {
+  let hash = 0;
+  const text = String(value || "");
+  for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  return hash;
+}
+
+function mapNode(id) {
+  return moneyCountryNodes.find((node) => node.id === id) || moneyCountryNodes[0];
+}
+
+function routeNodeNames(route) {
+  return route.map((id) => mapNode(id).name).join(" → ");
+}
+
+function chooseOriginNode(category, item) {
+  const candidates = moneyCountryNodes.filter((node) => node.id !== "shanghai" && node.id !== "cloudhub");
+  const seed = `${category}:${item.id}:${item.name}:${item.tag}`;
+  return candidates[hashText(seed) % candidates.length];
+}
+
+function buildShipmentRoute(originId, destinationId = "shanghai") {
+  const origin = mapNode(originId);
+  const destination = mapNode(destinationId);
+  const route = [origin.id];
+  if (origin.id !== "cloudhub") route.push("cloudhub");
+  if (origin.x > 60 && !route.includes("rivercity")) route.push("rivercity");
+  if (destination.id !== "cloudhub" && !route.includes(destination.id)) route.push(destination.id);
+  return route.filter((id, index, list) => id && list.indexOf(id) === index);
+}
+
+function shipmentNumber(category) {
+  return `MEX${String(hashText(`${category}-${Date.now()}-${Math.random()}`)).slice(0, 8)}`;
+}
+
+function pushShipmentEvent(shipment, text, kind = "move") {
+  shipment.events = Array.isArray(shipment.events) ? shipment.events : [];
+  shipment.events.unshift({ id: makeId(), day: gameDateText(), time: nowTime(), text, kind });
+  shipment.events = shipment.events.slice(0, 12);
+}
+
+function createsShipment(category, item) {
+  if (category === "shop") return item.asset !== "subscription" && item.asset !== "policy";
+  if (category === "credit") return ["先用后付", "手机"].some((keyword) => `${item.name} ${item.tag} ${item.desc}`.includes(keyword));
+  if (shippingCategories.has(category)) return true;
+  const text = `${item.name} ${item.tag} ${item.desc} ${item.status}`;
+  return shippingKeywords.some((keyword) => text.includes(keyword));
+}
+
+function createShipmentForRecord(record, category, item, payment) {
+  if (!record || !createsShipment(category, item)) return null;
+  const origin = chooseOriginNode(category, item);
+  const destination = mapNode("shanghai");
+  const route = buildShipmentRoute(origin.id, destination.id);
+  const trackingNo = shipmentNumber(category);
+  const shipment = {
+    id: makeId(),
+    recordId: record.id,
+    category,
+    title: item.name,
+    amount: payment.amount,
+    trackingNo,
+    originId: origin.id,
+    destinationId: destination.id,
+    route,
+    currentNodeIndex: 0,
+    status: `${origin.name} 已生成电子面单`,
+    detail: `${origin.kind}发货，目的地 ${destination.name}。路线：${routeNodeNames(route)}。`,
+    createdDay: state.gameTime.totalDays,
+    lastProcessedDay: state.gameTime.totalDays,
+    stationReminders: 0,
+    outForDelivery: false,
+    stationNotified: false,
+    signed: false,
+    time: nowTime(),
+    createdAt: Date.now(),
+    events: [],
+  };
+  pushShipmentEvent(shipment, `${origin.name} 打印面单，包裹开始假装存在。`, "created");
+  state.shipments.unshift(shipment);
+  state.shipments = state.shipments.slice(0, 80);
+  record.trackingNo = trackingNo;
+  record.shipmentId = shipment.id;
+  record.status = `${record.status || item.status || "订单已提交"} · ${shipment.status}`;
+  addNotice(`MoneyOS快递：${item.name} 已从${origin.name}发货`, { kind: "logistics", shipmentId: shipment.id });
+  addPhoneMessage("MoneyOS快递", `${item.name} 已发货，单号 ${trackingNo}。路线：${routeNodeNames(route)}。`);
+  return shipment;
+}
+
+function courierCall(shipment, result = "快递签收电话") {
+  state.calls.unshift({ id: makeId(), number: "快递员", type: "呼入", result, time: nowTime(), shipmentId: shipment.id });
+  state.calls = state.calls.slice(0, 60);
+  state.stats.callsReceived += 1;
+}
+
+function advanceShipmentOneDay(shipment) {
+  if (shipment.signed) return;
+  const route = Array.isArray(shipment.route) && shipment.route.length ? shipment.route : buildShipmentRoute(shipment.originId, shipment.destinationId);
+  shipment.route = route;
+
+  if (shipment.currentNodeIndex < route.length - 1) {
+    shipment.currentNodeIndex += 1;
+    const node = mapNode(route[shipment.currentNodeIndex]);
+    shipment.status = `到达${node.name}${node.kind === "收货地" ? "本地分拣" : node.kind}`;
+    pushShipmentEvent(shipment, `${shipment.title} 到达 ${node.name}，扫描员扫了一下又放回传送带。`);
+    addNotice(`物流更新：${shipment.title} 到达${node.name}`, { kind: "logistics", shipmentId: shipment.id });
+    addPhoneMessage("MoneyOS快递", `${shipment.title} 到达 ${node.name}。当前位置：${routeNodeNames(route.slice(0, shipment.currentNodeIndex + 1))}。`);
+    return;
+  }
+
+  if (!shipment.outForDelivery) {
+    shipment.outForDelivery = true;
+    shipment.status = "快递员派送中";
+    pushShipmentEvent(shipment, "快递员正在派送，电话准备响，但实物仍然处于哲学状态。", "call");
+    courierCall(shipment, "快递员说马上到");
+    addNotice(`快递员来电：${shipment.title} 正在派送`, { kind: "logistics", shipmentId: shipment.id });
+    addPhoneMessage("快递员", `${shipment.title} 我马上到，你在家吗？不在也没事，我会放驿站。`);
+    return;
+  }
+
+  if (!shipment.stationNotified) {
+    shipment.stationNotified = true;
+    shipment.status = "MoneyOS驿站待签收";
+    pushShipmentEvent(shipment, "包裹已放入 MoneyOS 驿站，驿站 App 开始用力催你签收。", "station");
+    addNotice(`MoneyOS驿站：${shipment.title} 待签收`, { kind: "logistics", shipmentId: shipment.id });
+    addPhoneMessage("MoneyOS驿站", `${shipment.title} 已到站，取件码 ${String(hashText(shipment.id)).slice(0, 4)}。请在快递 App 里签收。`);
+    return;
+  }
+
+  shipment.stationReminders = Math.floor(Number(shipment.stationReminders) || 0) + 1;
+  shipment.status = `驿站催签收第 ${shipment.stationReminders} 次`;
+  pushShipmentEvent(shipment, `驿站第 ${shipment.stationReminders} 次提醒：包裹还在，但你永远摸不到实物。`, "reminder");
+  addNotice(`驿站催签收：${shipment.title}`, { kind: "logistics", shipmentId: shipment.id });
+  addPhoneMessage("MoneyOS驿站", `${shipment.title} 还没签收。系统显示它离你 37 米，但这 37 米特别漫长。`);
+  if (shipment.stationReminders % 2 === 0) courierCall(shipment, "快递员催你去驿站签收");
+}
+
+function processShipments() {
+  state.shipments.forEach((shipment) => {
+    if (shipment.signed) return;
+    const lastDay = Math.max(0, Math.floor(Number(shipment.lastProcessedDay) || shipment.createdDay || 0));
+    const days = Math.min(3, Math.max(0, state.gameTime.totalDays - lastDay));
+    for (let i = 0; i < days; i += 1) advanceShipmentOneDay(shipment);
+    shipment.lastProcessedDay = state.gameTime.totalDays;
+  });
+}
+
+function scheduleLifeEvent({ category, source, title, text, delay = 1, call = false }) {
+  state.lifeEvents.unshift({
+    id: makeId(),
+    category,
+    source,
+    title,
+    text,
+    dueDay: state.gameTime.totalDays + delay,
+    call,
+    done: false,
+    createdAt: Date.now(),
+  });
+  state.lifeEvents = state.lifeEvents.slice(0, 80);
+}
+
+function scheduleSpendingAftercare(category, item) {
+  if (createsShipment(category, item)) return;
+  const source = apps[category]?.name || "MoneyOS";
+  const templates = {
+    food: ["骑手位置刷新", `${item.name} 仍显示还差 3 分钟，地图上的小车非常努力。`],
+    stocks: ["持仓波动", `${item.name} 估值刷新，曲线假装自己有逻辑。`],
+    travel: ["行程提醒", `${item.name} 已生成行程通知，请提前准备身份证和不存在的行李。`],
+    insurance: ["保单回访", `${item.name} 电子保单已可查看，保障范围写得很认真。`],
+    health: ["就诊提醒", `${item.name} 已提醒候诊，叫号屏幕在手机里闪了一下。`],
+    beauty: ["预约确认", `${item.name} 门店已确认预约，客服让你准时到店。`],
+    local: ["服务进度", `${item.name} 师傅已接单，正在路上绕一个很大的圈。`],
+    services: ["缴费回执", `${item.name} 已生成缴费回执，系统建议你保存截图。`],
+    subscriptions: ["订阅提醒", `${item.name} 已加入自动续费队列，下月还会想起你。`],
+  };
+  const [title, text] = templates[category] || ["订单后续", `${item.name} 状态已更新，手机世界继续为这笔钱运转。`];
+  scheduleLifeEvent({ category, source, title, text, delay: 1, call: ["beauty", "local", "health"].includes(category) });
+}
+
+function processLifeEvents() {
+  state.lifeEvents.forEach((event) => {
+    if (event.done || state.gameTime.totalDays < event.dueDay) return;
+    event.done = true;
+    addNotice(`${event.source}：${event.title}`, { kind: "followup", category: event.category });
+    addPhoneMessage(event.source, event.text);
+    if (event.call) {
+      state.calls.unshift({ id: makeId(), number: event.source, type: "呼入", result: event.title, time: nowTime() });
+      state.calls = state.calls.slice(0, 60);
+      state.stats.callsReceived += 1;
+    }
+  });
+}
+
+function processBackgroundLife() {
+  processShipments();
+  processLifeEvents();
+}
+
+function scheduleMoneyAftercare(source, title, text, { category = "money", delay = 1, call = false } = {}) {
+  scheduleLifeEvent({ category, source, title, text, delay, call });
+}
+
+function signShipment(shipmentId) {
+  const shipment = state.shipments.find((item) => item.id === shipmentId);
+  if (!shipment) return;
+  if (!shipment.stationNotified) {
+    addNotice("驿站说：还没到站，先别急着签收。");
+    render();
+    return;
+  }
+  if (shipment.signed) {
+    addNotice("这个包裹已经电子签收过了。");
+    render();
+    return;
+  }
+
+  shipment.signed = true;
+  shipment.signedAt = gameDateText();
+  shipment.status = "电子签收完成，实物仍未抵达";
+  pushShipmentEvent(shipment, "你完成了电子签收，系统判定一切完美，现实里什么都没出现。", "signed");
+  const record = [...state.orders, ...state.serviceRecords, ...state.bookings].find((item) => item.id === shipment.recordId);
+  if (record) record.status = "已电子签收，实物永远在路上";
+  addNotice(`MoneyOS驿站：${shipment.title} 已电子签收`, { kind: "logistics", shipmentId: shipment.id });
+  addPhoneMessage("MoneyOS驿站", `${shipment.title} 已完成签收。感谢理解，物品将在精神层面送达。`);
+  render();
+}
+
 function monthKey() {
   return `${state.gameTime.year}-${state.gameTime.month}`;
 }
@@ -969,6 +1215,7 @@ function advanceGameDay(reason = "交易") {
     }
     monthRollover();
   }
+  processBackgroundLife();
   addNotice(`${gameDateText()}：${reason}`);
 }
 
@@ -1160,7 +1407,7 @@ function payCatalogItem(category, item, categoryName) {
 }
 
 function addOrder(category, item, payment, extra = {}) {
-  state.orders.unshift({
+  const order = {
     id: makeId(),
     category,
     title: item.name,
@@ -1173,13 +1420,15 @@ function addOrder(category, item, payment, extra = {}) {
     cardName: payment.card?.name || (payment.credit ? "信用账户" : ""),
     cardNumber: payment.card?.number || (payment.credit ? "credit" : ""),
     ...extra,
-  });
+  };
+  state.orders.unshift(order);
   state.orders = state.orders.slice(0, 100);
   state.stats.ordersPlaced += 1;
+  return order;
 }
 
 function addServiceRecord(category, item, payment, extra = {}) {
-  state.serviceRecords.unshift({
+  const record = {
     id: makeId(),
     category,
     title: item.name,
@@ -1192,8 +1441,10 @@ function addServiceRecord(category, item, payment, extra = {}) {
     cardName: payment.card?.name || (payment.credit ? "信用账户" : ""),
     cardNumber: payment.card?.number || (payment.credit ? "credit" : ""),
     ...extra,
-  });
+  };
+  state.serviceRecords.unshift(record);
   state.serviceRecords = state.serviceRecords.slice(0, 80);
+  return record;
 }
 
 function addSubscription(item, payment, source) {
@@ -1939,6 +2190,90 @@ function recordsForAny(category) {
   return [...state.serviceRecords, ...state.orders, ...state.bookings]
     .filter((record) => record.category === category)
     .sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+}
+
+function renderLogisticsWorldMap() {
+  const activeShipment = state.shipments.find((shipment) => !shipment.signed) || state.shipments[0];
+  const route = activeShipment?.route?.length ? activeShipment.route : buildShipmentRoute("northport", "shanghai");
+  const routeSet = new Set(route);
+  const currentNodeId = route[Math.min(route.length - 1, Math.max(0, Math.floor(Number(activeShipment?.currentNodeIndex) || 0)))];
+  const routePoints = route.map((id) => `${mapNode(id).x},${mapNode(id).y}`).join(" ");
+  return `
+    <section class="world-map" aria-label="MoneyOS 虚假国家物流地图">
+      <header>
+        <div>
+          <span>后台国家地图</span>
+          <strong>${activeShipment ? escapeHtml(activeShipment.title) : "暂无活包裹"}</strong>
+        </div>
+        <b>${activeShipment ? escapeHtml(activeShipment.status) : "等待下单"}</b>
+      </header>
+      <div class="map-canvas">
+        <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <polyline class="map-route-shadow" points="${routePoints}" />
+          <polyline class="map-route" points="${routePoints}" />
+        </svg>
+        ${moneyCountryNodes
+          .map((node) => {
+            const inRoute = routeSet.has(node.id);
+            const current = node.id === currentNodeId;
+            return `
+              <span class="map-node ${inRoute ? "route-node" : ""} ${current ? "current-node" : ""}" style="--x:${node.x}%; --y:${node.y}%;">
+                <i>${escapeHtml(node.name.slice(0, 1))}</i>
+                <em>${escapeHtml(node.name)}</em>
+              </span>
+            `;
+          })
+          .join("")}
+      </div>
+      <p>${activeShipment ? `路线：${escapeHtml(routeNodeNames(route))}` : "买东西或寄件后，系统会给它生成一条看起来很真的路线。"}</p>
+    </section>
+  `;
+}
+
+function renderShipmentList() {
+  if (!state.shipments.length) return `<p class="empty">还没有包裹。买点东西、寄个件，手机里就会开始自己忙活。</p>`;
+  return state.shipments
+    .slice(0, 8)
+    .map((shipment) => {
+      const route = shipment.route?.length ? shipment.route : buildShipmentRoute(shipment.originId, shipment.destinationId);
+      const currentIndex = Math.min(route.length - 1, Math.max(0, Math.floor(Number(shipment.currentNodeIndex) || 0)));
+      const progress = route.length <= 1 ? 100 : Math.round((currentIndex / (route.length - 1)) * 100);
+      const canSign = shipment.stationNotified && !shipment.signed;
+      return `
+        <article class="shipment-card ${shipment.signed ? "signed-shipment" : ""}">
+          <header>
+            <div>
+              <span>${escapeHtml(shipment.trackingNo || "MEX00000000")}</span>
+              <strong>${escapeHtml(shipment.title)}</strong>
+            </div>
+            <b>${escapeHtml(shipment.status)}</b>
+          </header>
+          <div class="shipment-progress" aria-hidden="true"><span style="width:${progress}%"></span></div>
+          <p>${escapeHtml(shipment.detail || `路线：${routeNodeNames(route)}`)}</p>
+          <div class="route-chips">
+            ${route
+              .map((id, index) => {
+                const node = mapNode(id);
+                const className = index < currentIndex ? "done" : index === currentIndex ? "now" : "";
+                return `<span class="${className}">${escapeHtml(node.name)}</span>`;
+              })
+              .join("")}
+          </div>
+          <div class="shipment-events">
+            ${(shipment.events || [])
+              .slice(0, 4)
+              .map((event) => `<span><b>${escapeHtml(event.day || "")}</b>${escapeHtml(event.text)}</span>`)
+              .join("")}
+          </div>
+          ${
+            canSign
+              ? `<button class="station-sign-button" data-sign-shipment="${escapeHtml(shipment.id)}">MoneyOS驿站签收</button>`
+              : `<small>${shipment.signed ? `签收时间：${escapeHtml(shipment.signedAt || "刚刚")}` : "推进一天后会继续更新物流、电话和短信。"}</small>`
+          }
+        </article>
+      `;
+    })
+    .join("");
 }
 
 function renderCommerceCategoryApp({ appId, title, subtitle, listTitle, buttonText, recordTitle, emptyText }) {
@@ -2697,15 +3032,19 @@ function renderSubscriptionsApp() {
 }
 
 function renderLogisticsApp() {
-  return renderCommerceCategoryApp({
-    appId: "logistics",
-    title: "快递",
-    subtitle: "寄件、保价、退货和国际件",
-    listTitle: "可下单服务",
-    buttonText: "寄件",
-    recordTitle: "物流账单",
-    emptyText: "还没有快递账单。",
-  });
+  return `
+    ${appHeader("快递", "寄件、保价、退货、地图和驿站")}
+    <section class="app-body commerce-body logistics-body">
+      ${renderPaymentSummary()}
+      ${renderLogisticsWorldMap()}
+      <h3>我的包裹 / MoneyOS驿站</h3>
+      ${renderShipmentList()}
+      <h3>可下单服务</h3>
+      ${renderSpendList("logistics", "寄件")}
+      <h3>物流账单</h3>
+      ${renderRecordList(recordsForAny("logistics"), "还没有快递账单。")}
+    </section>
+  `;
 }
 
 function renderSecondhandApp() {
@@ -3377,6 +3716,7 @@ function recharge() {
   state.carrierBalance += 50;
   addServiceRecord("carrier", { name: "话费充值", price: 50, desc: "银行卡充值话费", status: "话费已到账", tag: "话费" }, payment);
   addNotice("银行卡充值话费 ¥50");
+  scheduleMoneyAftercare("营业厅", "充值到账复核", `话费充值 ${money(50)} 已完成，系统建议你继续花在套餐、电话和短信上。`, { category: "carrier" });
   render();
 }
 
@@ -3426,6 +3766,7 @@ function buyPlan(planId = "basic") {
     balance: `话费余额 ${money(state.carrierBalance)}`,
     source: "营业厅",
   });
+  scheduleMoneyAftercare("营业厅", "套餐权益提醒", `${plan.name} 已入网。下个月不手动续费，手机会再次变成精装修砖头。`, { category: "carrier" });
   render();
 }
 
@@ -3494,6 +3835,8 @@ function transferToCard() {
       source: "虚空银行",
       tone: "danger",
     });
+    advanceGameDay("输错卡号转账");
+    scheduleMoneyAftercare("虚空银行", "转账无法追回", `${money(amount)} 已进入虚空账户，客服表示看不见就是处理完了。`, { category: "bank" });
     render();
     return;
   }
@@ -3512,6 +3855,7 @@ function transferToCard() {
   });
   addNotice(`${money(amount)} 已转入 ${card.name}`);
   advanceGameDay("点钞转入银行卡");
+  scheduleMoneyAftercare("XX银行", "入账回执", `${money(amount)} 已进入 ${card.name}，现在它终于能在手机世界里被花掉了。`, { category: "bank" });
   advanceTutorial("transferToCard");
   render();
 }
@@ -3569,6 +3913,7 @@ function transferToPerson(contactId, amount, note = "") {
       },
     },
   );
+  scheduleMoneyAftercare(contact.name, "到账确认", `${contact.name} 已收到 ${money(cleanAmount)}。对方沉默，但系统说钱确实没了。`, { category: "wallet" });
   state.personTransferDraft = { ...state.personTransferDraft, contactId: contact.id, amount: cleanAmount, note };
   render();
 }
@@ -3638,29 +3983,30 @@ function buyCatalogItem(category, itemId) {
   if (item.hold) addHold(category, item, payment);
   if (item.loan) addLoanContract(category, item, payment);
   if (item.redPacket) recordRedPacket(item, payment, category);
+  let postRecord = null;
 
   if (category === "store") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
-    addServiceRecord(category, item, payment);
+    postRecord = addServiceRecord(category, item, payment);
     state.stats.appStorePurchases += 1;
   } else if (category === "carrier") {
     if (item.id === "phone-bill") state.carrierBalance += payment.amount;
     if (item.asset === "subscription") addSubscription(item, payment, category);
-    addServiceRecord(category, item, payment);
+    postRecord = addServiceRecord(category, item, payment);
     state.stats.billsPaid += 1;
   } else if (category === "bank") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
     if (item.asset === "holding") addHolding(category, item, payment);
-    addServiceRecord(category, item, payment);
+    postRecord = addServiceRecord(category, item, payment);
     state.stats.bankFees += payment.amount;
   } else if (category === "wallet") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
-    addServiceRecord(category, item, payment);
+    postRecord = addServiceRecord(category, item, payment);
     state.stats.walletPayments += payment.amount;
   } else if (category === "food") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
     const food = item.foodBreakdown;
-    addOrder(category, item, payment, {
+    postRecord = addOrder(category, item, payment, {
       status: `${item.status || "订单已提交"} · ${food?.deliveryLabel || "商家履约中"} · ${food?.eta || "永远还差 3 分钟"}`,
       detail: food
         ? `${baseItem.desc} ${food.address.label}：${food.address.address}；${food.tableware === "none" ? "无需餐具" : "需要餐具"}；${food.privacyNumber ? "隐私号保护" : "真实手机号联系"}；${food.invoice ? "已申请发票" : "未申请发票"}。${food.note ? `备注：${food.note}` : ""}`
@@ -3670,13 +4016,13 @@ function buyCatalogItem(category, itemId) {
   } else if (category === "shop") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
     if (item.asset === "policy") addPolicy(item, payment);
-    addOrder(category, item, payment, {
+    postRecord = addOrder(category, item, payment, {
       status: `${item.status || "订单已提交"} · 物流持续更新但永不签收`,
       detail: `${item.desc} 真东西永远不会送到你手里。`,
       tracking: "包裹已离你很近，明天仍然很近",
     });
   } else if (category === "travel") {
-    state.bookings.unshift({
+    postRecord = {
       id: makeId(),
       category,
       title: item.name,
@@ -3688,7 +4034,8 @@ function buyCatalogItem(category, itemId) {
       createdAt: Date.now(),
       cardName: payment.card?.name || "",
       cardNumber: payment.card?.number || "",
-    });
+    };
+    state.bookings.unshift(postRecord);
     state.bookings = state.bookings.slice(0, 60);
     state.stats.travelBookings += 1;
   } else if (category === "cars") {
@@ -3709,7 +4056,7 @@ function buyCatalogItem(category, itemId) {
       state.assets.vehicles = state.assets.vehicles.slice(0, 40);
       state.stats.vehiclesBought += 1;
     } else {
-      addServiceRecord(category, item, payment);
+      postRecord = addServiceRecord(category, item, payment);
     }
   } else if (category === "property") {
     if (item.asset === "property") {
@@ -3727,18 +4074,18 @@ function buyCatalogItem(category, itemId) {
       state.assets.properties = state.assets.properties.slice(0, 40);
       state.stats.propertiesPaid += 1;
     } else {
-      addServiceRecord(category, item, payment);
+      postRecord = addServiceRecord(category, item, payment);
     }
   } else if (category === "services") {
-    addServiceRecord(category, item, payment);
+    postRecord = addServiceRecord(category, item, payment);
     state.stats.billsPaid += 1;
   } else if (category === "insurance") {
     if (item.asset === "policy") addPolicy(item, payment);
-    addServiceRecord(category, item, payment);
+    postRecord = addServiceRecord(category, item, payment);
     state.stats.insurancePolicies += 1;
   } else if (category === "subscriptions") {
     addSubscription(item, payment, category);
-    addServiceRecord(category, item, payment);
+    postRecord = addServiceRecord(category, item, payment);
     state.stats.subscriptionPayments += 1;
   } else if (
     [
@@ -3766,7 +4113,7 @@ function buyCatalogItem(category, itemId) {
   ) {
     if (item.asset === "subscription") addSubscription(item, payment, category);
     if (item.asset === "policy") addPolicy(item, payment);
-    addServiceRecord(category, item, payment);
+    postRecord = addServiceRecord(category, item, payment);
     if (category === "ride") state.stats.ridesTaken += 1;
     if (category === "local") state.stats.localServices += 1;
     if (category === "health") state.stats.healthPayments += 1;
@@ -3788,14 +4135,16 @@ function buyCatalogItem(category, itemId) {
     if (category === "events") state.stats.eventPayments += 1;
     if (category === "security") state.stats.securityPayments += 1;
   } else if (category === "secondhand") {
-    addOrder(category, item, payment);
+    postRecord = addOrder(category, item, payment);
     state.stats.secondhandOrders += 1;
   } else if (category === "stocks") {
     addHolding(category, item, payment);
   } else {
-    addOrder(category, item, payment);
+    postRecord = addOrder(category, item, payment);
   }
 
+  if (postRecord) createShipmentForRecord(postRecord, category, item, payment);
+  scheduleSpendingAftercare(category, item);
   render();
 }
 
@@ -3918,7 +4267,9 @@ function buyCreditItem(itemId) {
     });
   }
 
-  addServiceRecord("credit", item, payment);
+  const record = addServiceRecord("credit", item, payment);
+  createShipmentForRecord(record, "credit", item, payment);
+  scheduleSpendingAftercare("credit", item);
   render();
 }
 
@@ -3943,6 +4294,7 @@ function chargeCreditRepayment(amount, title = "信用账单还款") {
     detail: payment.card.name,
   });
   addNotice(`信用已还款 ${money(cleanAmount)}`);
+  scheduleMoneyAftercare("信用中心", "还款入账", `${title} ${money(cleanAmount)} 已入账，可用额度恢复了一点，心理负担也假装轻了一点。`, { category: "credit" });
   return cleanAmount;
 }
 
@@ -3999,6 +4351,7 @@ function requestRefund(orderId) {
   });
   addNotice(`${order.title} 已退款 ${money(refundAmount)}`);
   advanceGameDay("售后退款");
+  scheduleMoneyAftercare("售后客服", "退款回访", `${order.title} 的退款已处理。钱回来了，但消费痕迹还留在手机里。`, { category: "refund", call: true });
   render();
 }
 
@@ -4038,6 +4391,7 @@ function releaseHold(holdId) {
   });
   addNotice(`${hold.title} 已退回 ${money(refundAmount)}`);
   advanceGameDay("退还押金");
+  scheduleMoneyAftercare("账单", "押金退回回执", `${hold.title} 已退回 ${money(refundAmount)}，系统仍保留你曾经交过押金的记忆。`, { category: "billhub" });
   render();
 }
 
@@ -4079,6 +4433,7 @@ function chargeSubscriptionRenewal(subscription) {
     payment,
   );
   addNotice(`${subscription.name} 已续费 ${money(amount)}`);
+  scheduleMoneyAftercare(apps[subscription.source]?.name || "订阅", "续费回执", `${subscription.name} 已续费成功。下月同日，它还会很准时地想你。`, { category: "subscriptions" });
   return amount;
 }
 
@@ -4148,6 +4503,7 @@ function chargeCreditInstallment(installment) {
     detail: payment.card.name,
   });
   addNotice(`${installment.title} 已还一期 ${money(dueAmount)}`);
+  scheduleMoneyAftercare("信用中心", "分期还款回执", `${installment.title} 已还一期，剩余 ${installment.remainingMonths} 期。手机把这个数字保存得很牢。`, { category: "credit" });
   return dueAmount;
 }
 
@@ -4196,6 +4552,7 @@ function chargeLoanInstallment(loan) {
     payment,
   );
   addNotice(`${loan.title} 已还月供 ${money(dueAmount)}`);
+  scheduleMoneyAftercare(loan.lender || apps[loan.category]?.name || "贷款机构", "月供扣款回执", `${loan.title} 本期月供已扣，剩余 ${loan.remainingMonths} 期。`, { category: loan.category || "bank" });
   return dueAmount;
 }
 
@@ -4270,6 +4627,7 @@ function payMonthlyCommitments() {
   });
   state.billRuns = state.billRuns.slice(0, 30);
   addNotice(`本月固定支出已处理 ${successCount} 项，共 ${money(paid)}`);
+  if (paid) scheduleMoneyAftercare("账单", "固定支出汇总", `本月固定支出批量扣款完成：成功 ${successCount} 项，共 ${money(paid)}${failedCount ? `，失败 ${failedCount} 项` : ""}。`, { category: "billhub" });
   render();
 }
 
@@ -4309,6 +4667,7 @@ function makeCall() {
     balance: `话费余额 ${money(state.carrierBalance)}`,
     source: "营业厅",
   });
+  scheduleMoneyAftercare("营业厅", "通话详单", `拨打 ${dialedNumber} 的通话费 ${money(CALL_FEE)} 已计入详单，结果：${result}。`, { category: "carrier" });
   state.dialNumber = "";
   render();
 }
@@ -4371,6 +4730,7 @@ function sendSms() {
     balance: `话费余额 ${money(state.carrierBalance)}`,
     source: "营业厅",
   });
+  scheduleMoneyAftercare("营业厅", "短信发送回执", `发送到 ${state.smsDraft.to} 的短信已扣 ${money(SMS_FEE)}，系统认为这是一笔很严肃的通信消费。`, { category: "carrier" });
   render();
 }
 
@@ -4474,6 +4834,12 @@ el.screen.addEventListener("click", (event) => {
   if (refundOrder) {
     if (!guardTutorialAction("refund", "", event)) return;
     return requestRefund(refundOrder.dataset.refundOrder);
+  }
+
+  const shipmentSign = event.target.closest("[data-sign-shipment]");
+  if (shipmentSign) {
+    if (!guardTutorialAction("signShipment", "", event)) return;
+    return signShipment(shipmentSign.dataset.signShipment);
   }
 
   const release = event.target.closest("[data-release-hold]");

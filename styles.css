@@ -1194,6 +1194,272 @@ textarea {
   color: #123f34;
 }
 
+.logistics-body {
+  display: grid;
+  gap: 10px;
+}
+
+.world-map {
+  background: linear-gradient(135deg, #fffef7, #eef8ff 58%, #fff3e2);
+  border: 1px solid rgba(22, 22, 22, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(22, 22, 22, 0.08);
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.world-map header,
+.shipment-card header {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.world-map header div,
+.shipment-card header div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.world-map header span,
+.shipment-card header span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.world-map header strong,
+.shipment-card header strong {
+  font-size: 0.98rem;
+  overflow-wrap: anywhere;
+}
+
+.world-map header b,
+.shipment-card header b {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(22, 22, 22, 0.08);
+  border-radius: 999px;
+  color: #9a3412;
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  max-width: 42%;
+  overflow-wrap: anywhere;
+  padding: 5px 7px;
+  text-align: right;
+}
+
+.map-canvas {
+  background:
+    linear-gradient(90deg, rgba(15, 118, 110, 0.09) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(15, 118, 110, 0.09) 1px, transparent 1px),
+    radial-gradient(circle at 20% 20%, rgba(245, 158, 11, 0.26), transparent 18%),
+    radial-gradient(circle at 78% 62%, rgba(37, 99, 235, 0.2), transparent 20%),
+    #f8fafc;
+  background-size: 22px 22px, 22px 22px, auto, auto, auto;
+  border: 2px dashed rgba(22, 22, 22, 0.18);
+  border-radius: 16px;
+  height: 190px;
+  overflow: hidden;
+  position: relative;
+}
+
+.map-canvas svg {
+  height: 100%;
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+}
+
+.map-route,
+.map-route-shadow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-route-shadow {
+  stroke: rgba(15, 23, 42, 0.18);
+  stroke-width: 6;
+}
+
+.map-route {
+  stroke: #ef4444;
+  stroke-dasharray: 6 5;
+  stroke-width: 3.2;
+}
+
+.map-node {
+  align-items: center;
+  display: grid;
+  justify-items: center;
+  left: var(--x);
+  position: absolute;
+  top: var(--y);
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.map-node i {
+  align-items: center;
+  background: #fff;
+  border: 2px solid rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+  box-shadow: 0 3px 9px rgba(15, 23, 42, 0.12);
+  display: grid;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 1000;
+  height: 22px;
+  place-items: center;
+  width: 22px;
+}
+
+.map-node em {
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 999px;
+  color: #1f2937;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 900;
+  margin-top: 2px;
+  max-width: 72px;
+  overflow: hidden;
+  padding: 2px 5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-node.route-node i {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.map-node.current-node i {
+  animation: routePulse 1s infinite alternate;
+  background: #ef4444;
+  color: #fff;
+}
+
+.world-map p {
+  color: #4b5563;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.shipment-card {
+  background: #fff;
+  border: 1px solid rgba(22, 22, 22, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 5px 18px rgba(22, 22, 22, 0.06);
+  display: grid;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 12px;
+}
+
+.shipment-card.signed-shipment {
+  background: linear-gradient(135deg, #f8fafc, #fff);
+  opacity: 0.82;
+}
+
+.shipment-card p,
+.shipment-card small {
+  color: #4b5563;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.shipment-progress {
+  background: #e5e7eb;
+  border-radius: 999px;
+  height: 7px;
+  overflow: hidden;
+}
+
+.shipment-progress span {
+  background: linear-gradient(90deg, #16a34a, #f59e0b, #ef4444);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+}
+
+.route-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.route-chips span {
+  background: #f1f5f9;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  color: #475569;
+  font-size: 0.66rem;
+  font-weight: 900;
+  padding: 4px 6px;
+}
+
+.route-chips span.done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.route-chips span.now {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.shipment-events {
+  border-left: 3px solid rgba(239, 68, 68, 0.2);
+  display: grid;
+  gap: 5px;
+  padding-left: 8px;
+}
+
+.shipment-events span {
+  color: #374151;
+  display: grid;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 1px;
+  line-height: 1.32;
+}
+
+.shipment-events b {
+  color: #9a3412;
+  font-size: 0.62rem;
+}
+
+.station-sign-button {
+  background: #111827;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 1000;
+  min-height: 38px;
+  width: 100%;
+}
+
+@keyframes routePulse {
+  from {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.38);
+    transform: scale(1);
+  }
+  to {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    transform: scale(1.08);
+  }
+}
+
 .food-panel {
   background: linear-gradient(135deg, #fff, #f8fbff);
   border: 1px solid rgba(22, 22, 22, 0.06);
