@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoneyOS 手机模拟器</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="simulator">
+      <section class="phone-shell" aria-label="MoneyOS 手机">
+        <div class="phone-status">
+          <span id="phoneClock">00:00</span>
+          <span id="phoneSignal">无号码</span>
+          <span id="phoneBattery">87%</span>
+        </div>
+
+        <section id="screen" class="phone-screen" aria-live="polite"></section>
+
+        <nav class="system-nav" aria-label="系统导航">
+          <button id="backButton" aria-label="返回">‹</button>
+          <button id="homeButton" aria-label="回桌面">●</button>
+          <button id="taskButton" aria-label="任务">□</button>
+        </nav>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
