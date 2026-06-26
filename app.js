@@ -148,6 +148,30 @@ const travelCoupons = [
   { id: "none", label: "不使用", discount: 0, min: 0 },
 ];
 
+const carProfiles = [
+  { id: "daily", label: "日常车", plate: "沪A·MO888", vehicle: "新能源 SUV", vin: "LVMO********8888", owner: "张三", note: "本人名下，默认绑定电子行驶证" },
+  { id: "family", label: "家用车", plate: "沪B·QH520", vehicle: "燃油轿车", vin: "LVFD********0520", owner: "妈妈", note: "家庭车辆，保险和年检也能代办" },
+  { id: "newcar", label: "新车待上牌", plate: "临牌·D1888", vehicle: "待交付新车", vin: "LNEW********1888", owner: "张三", note: "订车后用于上牌、金融和保险续保" },
+];
+
+const carServiceCenters = [
+  { id: "dealer", label: "4S 店", feeRate: 0.09, desc: "原厂工时、透明账单、价格很有存在感" },
+  { id: "fast", label: "快修门店", feeRate: 0.045, desc: "离家近、排队短、零件品牌需要自己相信" },
+  { id: "mobile", label: "上门服务", feeRate: 0.065, desc: "上门搭电/洗车/检测，含出车费" },
+];
+
+const carCoupons = [
+  { id: "owner-30", label: "车主券减30", discount: 30, min: 200 },
+  { id: "service-120", label: "保养满800减120", discount: 120, min: 800, tags: ["保养", "维修"] },
+  { id: "insurance-200", label: "车险满4000减200", discount: 200, min: 4000, tags: ["保险", "续保"] },
+  { id: "parking-50", label: "停车月租减50", discount: 50, min: 500, tags: ["停车"] },
+  { id: "none", label: "不使用", discount: 0, min: 0 },
+];
+
+const carWorkshopTags = new Set(["保养", "维修", "洗车", "年检", "救援"]);
+const carPolicyTags = new Set(["保险", "续保"]);
+const carPlateTags = new Set(["车牌", "证件"]);
+
 const travelBaggageTags = new Set(["机票", "度假"]);
 const travelStayTags = new Set(["酒店", "度假", "预授权"]);
 const travelTrafficTags = new Set(["火车票", "机票", "改签", "行李", "权益"]);
@@ -249,14 +273,21 @@ const spendCatalogs = {
     { id: "fuel", name: "加油/充电", price: 320, tag: "用车", desc: "一次满油或快充账单。", status: "能源账单已支付" },
     { id: "parking", name: "月租停车位", price: 650, tag: "停车", desc: "小区地下车位一个月。", status: "车位已续费" },
     { id: "maintenance", name: "小保养套餐", price: 899, tag: "保养", desc: "机油机滤、工时费和检测报告。", status: "保养预约成功" },
-    { id: "insurance", name: "交强险+商业险", price: 4680, tag: "保险", desc: "车损、三者和不计免赔。", status: "保单已出" },
+    { id: "insurance", name: "交强险+商业险", price: 4680, tag: "保险", desc: "车损、三者和不计免赔。", status: "保单已出", asset: "policy" },
+    { id: "insurance-renewal", name: "车险续保首期", price: 4980, tag: "续保", desc: "续保报价、车船税、交强险、商业险和下一年提醒。", status: "续保保单已承保", asset: "policy" },
     { id: "used-car", name: "二手燃油车全款", price: 58600, tag: "买车", desc: "含过户服务费和临牌。", status: "车辆已过户", asset: "vehicle" },
     { id: "ev-suv", name: "新能源 SUV 首付", price: 49900, tag: "首付", desc: "首付支付成功后生成汽车金融月供。", status: "订车合同已生成", asset: "vehicle", loan: { principal: 180000, months: 36, monthly: 5480, lender: "汽车金融", collateral: "新能源 SUV" } },
+    { id: "plate-bind", name: "绑定车牌/电子行驶证", price: 15, tag: "车牌", desc: "绑定车牌、行驶证、车架号和违章提醒。", status: "车牌资料已绑定" },
     { id: "test-drive-hold", name: "试驾保证金", price: 2000, tag: "保证金", desc: "预约高端车试驾，先冻结保证金。", status: "试驾保证金已冻结", hold: true },
     { id: "plate-auction", name: "车牌竞价保证金", price: 5000, tag: "车牌", desc: "参与车牌竞价前先缴保证金。", status: "竞价保证金已冻结", hold: true },
     { id: "car-wash", name: "精洗美容套餐", price: 238, tag: "洗车", desc: "精洗、打蜡、内饰清洁和门店预约服务费。", status: "洗车券已发放" },
     { id: "inspection", name: "车辆年检代办", price: 360, tag: "年检", desc: "检测站预约、代办跑腿和电子检验标志。", status: "年检代办已受理" },
     { id: "rescue-club", name: "道路救援年卡", price: 299, tag: "救援", desc: "拖车、搭电、换胎和高速服务限制。", status: "救援会员已开通", asset: "subscription" },
+    { id: "roadside-rescue", name: "高速拖车救援", price: 880, tag: "救援", desc: "高速拖车、吊装、空驶费和服务区等待费。", status: "救援工单已派发" },
+    { id: "accident-repair", name: "事故定损维修", price: 3800, tag: "维修", desc: "报案、定损、自费免赔额、钣喷工时和零件预付款。", status: "维修定损已提交" },
+    { id: "tire-replacement", name: "四条轮胎换新", price: 2599, tag: "维修", desc: "轮胎、动平衡、气门嘴和旧胎回收费。", status: "轮胎已预约安装" },
+    { id: "etc-topup", name: "ETC 通行费充值", price: 500, tag: "ETC", desc: "预存高速通行费，过闸后逐笔扣减并开电子发票。", status: "ETC 余额已充值" },
+    { id: "license-renewal", name: "驾驶证换证体检", price: 128, tag: "证件", desc: "体检、拍照、工本费和邮寄到家。", status: "换证申请已提交" },
     { id: "violation-pay", name: "违章罚款代缴", price: 250, tag: "罚款", desc: "罚款、处理服务费和驾驶证短信提醒。", status: "违章处理已提交" },
   ],
   property: [
@@ -585,6 +616,16 @@ const defaultState = {
     autoCheckIn: true,
     remark: "",
   },
+  carDraft: {
+    vehicleId: "daily",
+    serviceCenter: "dealer",
+    couponId: "owner-30",
+    bindPlate: true,
+    invoice: true,
+    rescuePriority: true,
+    autoRenewInsurance: true,
+    remark: "",
+  },
   shopCart: [],
   billRuns: [],
   profile: {
@@ -776,6 +817,7 @@ function loadState() {
       foodDraft: { ...defaultState.foodDraft, ...(parsed.foodDraft || {}) },
       shopDraft: { ...defaultState.shopDraft, ...(parsed.shopDraft || {}) },
       travelDraft: { ...defaultState.travelDraft, ...(parsed.travelDraft || {}) },
+      carDraft: { ...defaultState.carDraft, ...(parsed.carDraft || {}) },
       shopCart: Array.isArray(parsed.shopCart) ? parsed.shopCart.slice(0, 24) : [],
       profile: { ...defaultState.profile, ...(parsed.profile || {}) },
       smsDraft: { ...defaultState.smsDraft, ...parsed.smsDraft },
@@ -951,6 +993,18 @@ function makePaymentMeta(category, item, payment) {
       protection: `${config.checkout} ${travel.returnRule} ${travel.insurance ? "已购出行保障。" : "未购出行保障。"}${travel.autoCheckIn ? " 已开启值机/入住助手。" : ""}${travel.remark ? ` 备注：${travel.remark}` : ""}`,
     };
   }
+  if (category === "cars" && item.carBreakdown) {
+    const car = item.carBreakdown;
+    return {
+      orderNo: newOrderNumber(category),
+      merchant: car.merchant,
+      channel: "MoneyOS 汽车",
+      serviceFee: car.platformFee + car.serviceFee,
+      invoice: car.invoice ? currentProfile().invoiceTitle : "未申请发票",
+      fulfillment: `${car.vehicle.plate} · ${car.vehicle.vehicle} · ${car.fulfillmentLabel}`,
+      protection: `${config.checkout} ${car.promise}${car.bindPlate ? " 已校验车牌/行驶证。" : " 未绑定电子行驶证。"}${car.autoRenewInsurance ? " 已开启续保提醒。" : ""}${car.remark ? ` 备注：${car.remark}` : ""}`,
+    };
+  }
   const fulfillment = item.loan
     ? `${item.loan.lender || "贷款机构"}月供：${item.loan.months} 期，每期 ${money(item.loan.monthly)}`
     : item.hold
@@ -980,6 +1034,10 @@ function checkoutLineFor(category, item) {
   if (category === "travel" && item.travelBreakdown) {
     lines.push(`实付含${item.travelBreakdown.summary}`);
     lines.push(item.travelBreakdown.returnRule);
+  }
+  if (category === "cars" && item.carBreakdown) {
+    lines.push(`实付含${item.carBreakdown.summary}`);
+    lines.push(item.carBreakdown.promise);
   }
   if (item.hold) lines.push(`押金/预授权，可退约 ${money(Math.floor(item.price * (item.refundRate || 1)))}`);
   if (item.loan) lines.push(`首付后生成 ${item.loan.months} 期月供，每期 ${money(item.loan.monthly)}`);
@@ -1096,6 +1154,7 @@ function pushShipmentEvent(shipment, text, kind = "move") {
 function createsShipment(category, item) {
   if (category === "shop") return item.asset !== "subscription" && item.asset !== "policy";
   if (category === "credit") return ["先用后付", "手机"].some((keyword) => `${item.name} ${item.tag} ${item.desc}`.includes(keyword));
+  if (category === "cars") return item.id === "license-renewal";
   if (shippingCategories.has(category)) return true;
   const text = `${item.name} ${item.tag} ${item.desc} ${item.status}`;
   return shippingKeywords.some((keyword) => text.includes(keyword));
@@ -1227,9 +1286,10 @@ function scheduleSpendingAftercare(category, item) {
     local: ["服务进度", `${item.name} 师傅已接单，正在路上绕一个很大的圈。`],
     services: ["缴费回执", `${item.name} 已生成缴费回执，系统建议你保存截图。`],
     subscriptions: ["订阅提醒", `${item.name} 已加入自动续费队列，下月还会想起你。`],
+    cars: ["车主服务提醒", `${item.name} 已同步车牌和履约状态，年检、救援、保单或维修后续可以继续处理。`],
   };
   const [title, text] = templates[category] || ["订单后续", `${item.name} 状态已更新，手机世界继续为这笔钱运转。`];
-  scheduleLifeEvent({ category, source, title, text, delay: 1, call: ["beauty", "local", "health"].includes(category) });
+  scheduleLifeEvent({ category, source, title, text, delay: 1, call: ["beauty", "local", "health", "cars"].includes(category) && ["救援", "维修", "保险", "续保"].includes(item.tag) });
 }
 
 function processLifeEvents() {
@@ -1512,6 +1572,7 @@ function creditBlockReason(category, item = {}) {
   if (["bank", "stocks", "credit"].includes(category)) return "银行服务、投资和信用还款不能使用信用额度。";
   if (category === "property") return "房产首付、租金、认筹和房贷必须使用银行卡。";
   if (item.loan) return "贷款首付会生成长期月供，必须先用银行卡支付。";
+  if (category === "cars" && ["罚款", "车牌", "证件"].includes(item.tag)) return "车牌、证件和交通罚款类项目只支持银行卡。";
   if (category === "wallet" && (item.redPacket || ["红包", "群红包", "AA", "提现"].includes(item.tag))) return "转账、红包、AA 和提现手续费不能使用信用额度。";
   if (category === "gov" && ["税费", "社保", "公积金", "罚款"].includes(item.tag)) return "政务税费、社保、公积金和罚款只支持银行卡。";
   if (category === "overseas" && item.id === "wire") return "跨境汇款本金必须从银行卡扣款。";
@@ -2492,6 +2553,193 @@ function travelBookingBreakdown(item) {
   };
 }
 
+function currentCarDraft() {
+  const draft = { ...defaultState.carDraft, ...(state.carDraft || {}) };
+  if (!carProfiles.some((item) => item.id === draft.vehicleId)) draft.vehicleId = defaultState.carDraft.vehicleId;
+  if (!carServiceCenters.some((item) => item.id === draft.serviceCenter)) draft.serviceCenter = defaultState.carDraft.serviceCenter;
+  if (!carCoupons.some((item) => item.id === draft.couponId)) draft.couponId = defaultState.carDraft.couponId;
+  draft.bindPlate = draft.bindPlate !== false;
+  draft.invoice = draft.invoice !== false;
+  draft.rescuePriority = draft.rescuePriority !== false;
+  draft.autoRenewInsurance = draft.autoRenewInsurance !== false;
+  draft.remark = String(draft.remark || "").trim().slice(0, 60);
+  return draft;
+}
+
+function updateCarDraft(patch) {
+  state.carDraft = { ...currentCarDraft(), ...patch };
+}
+
+function carMerchantFor(item, center) {
+  if (item.id === "fuel") return "MoneyOS 能源站";
+  if (item.tag === "停车") return "MoneyOS 停车场";
+  if (carPolicyTags.has(item.tag)) return "MoneyOS 车险服务";
+  if (item.asset === "vehicle" || item.tag === "买车" || item.tag === "首付") return "MoneyOS 汽车交易中心";
+  if (item.tag === "车牌") return "MoneyOS 车牌服务";
+  if (item.tag === "ETC") return "MoneyOS ETC 服务";
+  if (item.tag === "罚款") return "城市交通违法处理";
+  if (item.tag === "证件") return "驾驶证换证服务";
+  if (item.tag === "年检") return "检测站代办";
+  return `MoneyOS ${center.label}`;
+}
+
+function carFulfillmentLabel(item, center) {
+  if (item.id === "fuel") return "到站核销/充电完成后出票";
+  if (item.tag === "停车") return "车牌识别进出场，月租当月有效";
+  if (carPolicyTags.has(item.tag)) return "电子保单 + 续保提醒";
+  if (item.asset === "vehicle") return item.loan ? "订车合同 + 汽车金融月供" : "过户提档 + 临牌";
+  if (item.tag === "车牌") return item.hold ? "竞价保证金冻结，结束后按规则释放" : "车牌/行驶证资料绑定";
+  if (item.tag === "保证金") return "试驾前冻结，到店验车后释放";
+  if (item.tag === "年检") return "检测站预约 + 电子检验标志";
+  if (item.tag === "救援") return item.asset === "subscription" ? "会员权益入账，按次限制使用" : "救援车派单 + 电话确认";
+  if (item.tag === "维修") return `${center.label}预约进厂，定损后补尾款`;
+  if (item.tag === "洗车") return `${center.label}核销洗车券`;
+  if (item.tag === "ETC") return "通行费预存，过闸后逐笔扣";
+  if (item.tag === "证件") return "体检拍照 + 证件邮寄";
+  if (item.tag === "罚款") return "违法处理提交，回执短信同步";
+  return `${center.label}履约`;
+}
+
+function carPromiseFor(item, refundRate) {
+  if (item.hold) return `押金按验车/竞价结果释放，预计可退 ${money(Math.floor(item.price * (item.refundRate || 1)))}`;
+  if (item.loan) return `首付后生成车贷月供，每期 ${money(item.loan.monthly)}，共 ${item.loan.months} 期`;
+  if (carPolicyTags.has(item.tag)) return `电子保单即时生成，退保预计可退 ${Math.round(refundRate * 100)}% 扣已生效天数`;
+  if (item.tag === "维修") return `维修预约可改期，已采购配件会扣费，预计可退 ${Math.round(refundRate * 100)}%`;
+  if (item.tag === "罚款") return "罚款提交后基本不可撤回，处理费不退";
+  if (item.tag === "ETC") return "ETC 余额可按账户规则退，通行费逐笔入账";
+  if (item.tag === "年检") return "检测不通过会生成复检提醒，代办费通常不退";
+  return `服务未核销前可退部分，预计可退 ${Math.round(refundRate * 100)}%`;
+}
+
+function carRefundRateFor(item) {
+  if (item.hold) return Math.max(0.1, Math.min(1, Number(item.refundRate) || 1));
+  if (item.loan) return 0.32;
+  if (item.asset === "vehicle") return 0.45;
+  if (carPolicyTags.has(item.tag)) return 0.78;
+  if (item.asset === "subscription") return 0.52;
+  if (item.tag === "维修") return 0.56;
+  if (item.tag === "保养") return 0.72;
+  if (item.tag === "停车") return 0.64;
+  if (item.tag === "ETC") return 0.98;
+  if (item.tag === "罚款") return 0.02;
+  if (item.tag === "用车") return 0.05;
+  if (item.tag === "证件") return 0.35;
+  return 0.66;
+}
+
+function carOrderBreakdown(item) {
+  const draft = currentCarDraft();
+  const vehicle = carProfiles.find((entry) => entry.id === draft.vehicleId) || carProfiles[0];
+  const center = carServiceCenters.find((entry) => entry.id === draft.serviceCenter) || carServiceCenters[0];
+  const coupon = carCoupons.find((entry) => entry.id === draft.couponId) || carCoupons[0];
+  const base = Math.max(1, Math.floor(Number(item.price) || 0));
+  const workshop = carWorkshopTags.has(item.tag);
+  const policy = carPolicyTags.has(item.tag);
+  const vehicleDeal = item.asset === "vehicle";
+  const plateRequired = draft.bindPlate && (workshop || policy || vehicleDeal || carPlateTags.has(item.tag) || ["停车", "ETC", "罚款", "用车"].includes(item.tag));
+  const plateVerifyFee = plateRequired && item.id !== "plate-bind" ? 8 : 0;
+  const serviceFee = item.hold
+    ? 0
+    : workshop
+      ? Math.max(12, Math.floor(base * center.feeRate))
+      : policy
+        ? 68
+        : vehicleDeal
+          ? Math.max(600, Math.floor(base * 0.018))
+          : item.tag === "罚款"
+            ? 25
+            : item.tag === "ETC"
+              ? 5
+              : item.tag === "停车"
+                ? 12
+                : item.tag === "证件"
+                  ? 15
+                  : Math.max(0, Math.floor(base * 0.018));
+  const governmentFee = item.id === "license-renewal"
+    ? 10
+    : item.tag === "年检"
+      ? 120
+      : policy
+        ? 420
+        : item.id === "used-car"
+          ? 680
+          : item.id === "ev-suv"
+            ? 1500
+            : item.id === "plate-auction"
+              ? 80
+              : 0;
+  const materialFee = item.id === "maintenance"
+    ? 120
+    : item.id === "accident-repair"
+      ? 480
+      : item.id === "tire-replacement"
+        ? 180
+        : item.id === "car-wash"
+          ? 35
+          : 0;
+  const rescuePriorityFee = draft.rescuePriority && item.tag === "救援" && item.id !== "rescue-club" ? 60 : 0;
+  const accessDepositFee = item.tag === "停车" ? 50 : 0;
+  const invoiceFee = draft.invoice && ["用车", "停车", "ETC"].includes(item.tag) ? 2 : 0;
+  const platformFee = item.hold ? 0 : Math.max(1, Math.floor((base + serviceFee + governmentFee + materialFee) * 0.006));
+  const couponBase = base + plateVerifyFee + serviceFee + governmentFee + materialFee + rescuePriorityFee + accessDepositFee + invoiceFee + platformFee;
+  const couponAllowed = !item.hold && item.tag !== "罚款" && couponBase >= Math.max(0, coupon.min || 0) && (!coupon.tags || coupon.tags.includes(item.tag));
+  const discount = couponAllowed ? Math.min(coupon.discount, Math.max(0, couponBase - 1)) : 0;
+  const total = Math.max(1, couponBase - discount);
+  const refundRate = carRefundRateFor(item);
+  const refundFee = Math.max(0, total - Math.floor(total * refundRate));
+  const lines = [
+    ["基础价格", base],
+    ["车牌/行驶证核验", plateVerifyFee],
+    ["门店/代办服务费", serviceFee],
+    ["车船税/工本/过户检测", governmentFee],
+    ["材料/配件预付款", materialFee],
+    ["救援加急", rescuePriorityFee],
+    ["停车门禁押金", accessDepositFee],
+    ["电子发票服务", invoiceFee],
+    ["平台服务费", platformFee],
+    ["车主优惠券", -discount],
+  ].filter(([, amount]) => amount);
+  const summaryParts = [
+    plateVerifyFee ? `车牌核验 ${money(plateVerifyFee)}` : "",
+    serviceFee ? `服务费 ${money(serviceFee)}` : "",
+    governmentFee ? `税费/工本 ${money(governmentFee)}` : "",
+    materialFee ? `材料 ${money(materialFee)}` : "",
+    rescuePriorityFee ? `救援加急 ${money(rescuePriorityFee)}` : "",
+    accessDepositFee ? `门禁押金 ${money(accessDepositFee)}` : "",
+    invoiceFee ? `发票 ${money(invoiceFee)}` : "",
+    platformFee ? `平台费 ${money(platformFee)}` : "",
+    discount ? `优惠 -${money(discount)}` : "",
+  ].filter(Boolean);
+  return {
+    vehicle,
+    center,
+    merchant: carMerchantFor(item, center),
+    fulfillmentLabel: carFulfillmentLabel(item, center),
+    base,
+    plateVerifyFee,
+    serviceFee,
+    governmentFee,
+    materialFee,
+    rescuePriorityFee,
+    accessDepositFee,
+    invoiceFee,
+    platformFee,
+    discount,
+    total,
+    lines,
+    summary: summaryParts.length ? summaryParts.join("、") : "无额外费用",
+    couponLabel: discount ? coupon.label : "未用车主券",
+    bindPlate: plateRequired,
+    invoice: draft.invoice,
+    rescuePriority: Boolean(rescuePriorityFee),
+    autoRenewInsurance: policy && draft.autoRenewInsurance,
+    remark: draft.remark,
+    promise: carPromiseFor(item, refundRate),
+    refundRate,
+    refundFee,
+  };
+}
+
 function catalogItemForCheckout(category, item) {
   if (category === "food") {
     const foodBreakdown = foodOrderBreakdown(item);
@@ -2521,11 +2769,21 @@ function catalogItemForCheckout(category, item) {
       refundRate: travelBreakdown.refundRate,
     };
   }
+  if (category === "cars") {
+    const carBreakdown = carOrderBreakdown(item);
+    return {
+      ...item,
+      price: carBreakdown.total,
+      desc: `${item.desc} 实付包含${carBreakdown.summary}。`,
+      carBreakdown,
+      refundRate: carBreakdown.refundRate,
+    };
+  }
   return item;
 }
 
 function renderCheckoutBreakdown(item) {
-  const breakdown = item.foodBreakdown || item.shopBreakdown || item.travelBreakdown;
+  const breakdown = item.foodBreakdown || item.shopBreakdown || item.travelBreakdown || item.carBreakdown;
   if (!breakdown?.lines?.length) return "";
   return `
     <div class="checkout-breakdown">
@@ -3718,17 +3976,164 @@ function renderTravelApp() {
   `;
 }
 
+function renderCarControlPanel() {
+  const draft = currentCarDraft();
+  const vehicle = carProfiles.find((entry) => entry.id === draft.vehicleId) || carProfiles[0];
+  return `
+    <section class="food-panel car-panel">
+      <div class="food-address car-address">
+        <span>当前车辆</span>
+        <strong>${escapeHtml(vehicle.plate)} · ${escapeHtml(vehicle.vehicle)}</strong>
+        <p>${escapeHtml(vehicle.owner)} · ${escapeHtml(vehicle.vin)} · ${escapeHtml(vehicle.note)}</p>
+      </div>
+      <div class="food-segment" aria-label="车辆档案">
+        ${carProfiles
+          .map(
+            (item) => `
+              <button data-car-option="vehicleId" data-car-value="${item.id}" aria-pressed="${draft.vehicleId === item.id ? "true" : "false"}">
+                ${escapeHtml(item.label)}
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+      <div class="food-section">
+        <span>服务门店</span>
+        <div class="food-option-grid">
+          ${carServiceCenters
+            .map(
+              (item) => `
+                <button data-car-option="serviceCenter" data-car-value="${item.id}" aria-pressed="${draft.serviceCenter === item.id ? "true" : "false"}">
+                  <strong>${escapeHtml(item.label)}</strong>
+                  <small>${Math.round(item.feeRate * 100)}% 服务费 · ${escapeHtml(item.desc)}</small>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>车主券</span>
+        <div class="food-chip-row">
+          ${carCoupons
+            .map(
+              (item) => `
+                <button data-car-option="couponId" data-car-value="${item.id}" aria-pressed="${draft.couponId === item.id ? "true" : "false"}">
+                  ${escapeHtml(item.label)}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-toggles">
+        <button data-car-toggle="bindPlate" aria-pressed="${draft.bindPlate ? "true" : "false"}">车牌/行驶证</button>
+        <button data-car-toggle="invoice" aria-pressed="${draft.invoice ? "true" : "false"}">电子发票</button>
+        <button data-car-toggle="rescuePriority" aria-pressed="${draft.rescuePriority ? "true" : "false"}">救援加急</button>
+        <button data-car-toggle="autoRenewInsurance" aria-pressed="${draft.autoRenewInsurance ? "true" : "false"}">续保提醒</button>
+      </div>
+      <textarea data-car-remark maxlength="60" placeholder="车架号、到店时间、发票备注、事故说明">${escapeHtml(draft.remark)}</textarea>
+    </section>
+  `;
+}
+
+function renderCarSpendList() {
+  const items = spendCatalogs.cars || [];
+  const activeTag = state.spendFilters?.cars || "全部";
+  const tags = ["全部", ...Array.from(new Set(items.map((item) => item.tag))).filter(Boolean)];
+  const visibleItems = activeTag === "全部" ? items : items.filter((item) => item.tag === activeTag);
+  return `
+    <div class="spend-filter" aria-label="汽车分类筛选">
+      ${tags
+        .map(
+          (tag) => `
+            <button data-spend-filter-category="cars" data-spend-filter-tag="${escapeHtml(tag)}" aria-pressed="${activeTag === tag ? "true" : "false"}">
+              ${escapeHtml(tag)}
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+    <div class="spend-list car-spend-list">
+      ${visibleItems
+        .map((baseItem) => {
+          const item = catalogItemForCheckout("cars", baseItem);
+          const car = item.carBreakdown;
+          return `
+            <article class="spend-item car-spend-item">
+              <div>
+                <span class="spend-tag">${escapeHtml(baseItem.tag)}</span>
+                <strong>${escapeHtml(baseItem.name)}</strong>
+                <p>${escapeHtml(baseItem.desc)}</p>
+                <small class="checkout-line">${escapeHtml(car ? `${car.vehicle.plate} · ${car.fulfillmentLabel} · ${car.summary}` : checkoutLineFor("cars", baseItem))}</small>
+                ${renderSpendFlags(item)}
+              </div>
+              <div class="spend-action">
+                <small>标价 ${money(baseItem.price)}</small>
+                <b>${money(item.price)}</b>
+                <button class="primary" data-spend-category="cars" data-spend-id="${baseItem.id}">支付</button>
+              </div>
+            </article>
+          `;
+        })
+        .join("")}
+      ${visibleItems.length ? "" : `<p class="empty">这个分类下暂时没有可花钱项目。</p>`}
+    </div>
+  `;
+}
+
+function carActionButton(record, action, label, doneLabel) {
+  const done = Boolean(record.carActions?.[action]);
+  return `<button data-car-record="${record.id}" data-car-action="${action}" ${done ? "disabled" : ""}>${done ? doneLabel : label}</button>`;
+}
+
+function renderCarAfterSales() {
+  const records = serviceRecordsFor("cars").slice(0, 6);
+  if (!records.length) return `<p class="empty">支付汽车服务后，这里会出现年检、救援、理赔、续保和 ETC 后续。</p>`;
+  return records
+    .map((record) => {
+      const tag = record.tag || record.carBreakdown?.tag || "";
+      const actionButtons = [];
+      if (tag === "年检") actionButtons.push(carActionButton(record, "inspection", "完成年检", "已完成"));
+      if (tag === "救援") actionButtons.push(carActionButton(record, "rescue", "催救援", "已派车"));
+      if (tag === "维修" || carPolicyTags.has(tag)) actionButtons.push(carActionButton(record, "claim", "提交理赔/定损", "已提交"));
+      if (carPolicyTags.has(tag)) actionButtons.push(carActionButton(record, "renew", "续保提醒", "已开启"));
+      if (tag === "ETC") actionButtons.push(carActionButton(record, "etc", "同步通行账单", "已同步"));
+      if (tag === "停车") actionButtons.push(carActionButton(record, "parking", "测试车牌抬杆", "已验证"));
+      return `
+        <div class="list-row refund-row car-action-row">
+          <div>
+            <strong>${escapeHtml(record.title)}</strong>
+            <span>${escapeHtml(record.status)} · ${money(record.amount)}</span>
+            <small class="record-meta">${escapeHtml(record.carBreakdown?.fulfillmentLabel || record.detail || "汽车服务履约中")} · ${escapeHtml(record.carBreakdown?.promise || "按平台规则处理后续")}</small>
+          </div>
+          <div class="travel-action-buttons">
+            ${actionButtons.length ? actionButtons.join("") : `<small>暂无可操作后续</small>`}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
 function renderCarsApp() {
   return `
-    ${appHeader("汽车", "买车和养车支出")}
+    ${appHeader("汽车", "车牌、保险、保养、停车、救援和车贷")}
     <section class="app-body commerce-body">
       ${renderPaymentSummary()}
+      ${renderCarControlPanel()}
       <h3>车辆服务</h3>
-      ${renderSpendList("cars", "支付")}
+      ${renderCarSpendList()}
       <h3>我的车辆</h3>
       ${renderAssetList(state.assets.vehicles, "还没有车辆资产。")}
+      <h3>我的车险</h3>
+      ${renderAssetList(state.assets.policies.filter((policy) => ["保险", "续保"].includes(policy.kind) || policy.name.includes("车险") || policy.name.includes("交强险")), "还没有车险保单。")}
       <h3>车贷/月供</h3>
       ${renderLoanList("cars")}
+      <h3>用车后续</h3>
+      ${renderCarAfterSales()}
+      <h3>押金/预授权</h3>
+      ${renderHoldList("cars")}
       <h3>用车账单</h3>
       ${renderRecordList(serviceRecordsFor("cars"), "还没有用车账单。")}
     </section>
@@ -4927,6 +5332,7 @@ function buyCatalogItem(category, itemId) {
       addPhoneMessage("MoneyOS旅行", `${item.name} 已确认，${travel.passenger.name}，${travel.route}。${travel.fulfillmentLabel}，${travel.returnRule}。`);
     }
   } else if (category === "cars") {
+    const car = item.carBreakdown;
     if (item.asset === "subscription") addSubscription(item, payment, category);
     if (item.asset === "policy") addPolicy(item, payment);
     if (item.asset === "vehicle") {
@@ -4935,7 +5341,7 @@ function buyCatalogItem(category, itemId) {
         kind: item.tag,
         name: item.name,
         amount: payment.amount,
-        detail: item.status,
+        detail: car ? `${car.vehicle.plate} · ${car.fulfillmentLabel} · ${car.promise}` : item.status,
         status: item.status,
         meta: payment.meta,
         time: nowTime(),
@@ -4943,8 +5349,20 @@ function buyCatalogItem(category, itemId) {
       });
       state.assets.vehicles = state.assets.vehicles.slice(0, 40);
       state.stats.vehiclesBought += 1;
-    } else {
-      postRecord = addServiceRecord(category, item, payment);
+    }
+    postRecord = addServiceRecord(category, item, payment, {
+      status: `${item.status || "汽车服务已支付"}${car ? ` · ${car.vehicle.plate} · ${car.fulfillmentLabel}` : ""}`,
+      detail: car
+        ? `${item.desc} ${car.vehicle.plate} ${car.vehicle.vehicle}；${car.center.label}；${car.invoice ? "已申请发票" : "未申请发票"}；${car.bindPlate ? "已绑定车牌/行驶证" : "未绑定车牌资料"}；${car.autoRenewInsurance ? "续保提醒已开启" : "未开启续保提醒"}。${car.remark ? `备注：${car.remark}` : ""}`
+        : item.desc,
+      tracking: car ? `${car.merchant} · ${car.fulfillmentLabel} · ${car.promise}` : item.status,
+      tag: item.tag,
+      itemId: item.id,
+      carBreakdown: car,
+      refundRate: car?.refundRate,
+    });
+    if (car) {
+      addPhoneMessage("MoneyOS汽车", `${item.name} 已支付，${car.vehicle.plate}，${car.fulfillmentLabel}。${car.promise}`);
     }
   } else if (category === "property") {
     if (item.asset === "property") {
@@ -5325,6 +5743,73 @@ function confirmTravelCheckIn(bookingId) {
   addNotice(`${booking.title} ${booking.checkInStatus}`);
   addPhoneMessage("MoneyOS旅行", `${booking.title} 已完成${label}。${travel.route ? `行程：${travel.route}。` : ""}请继续为下一笔旅途消费做准备。`);
   advanceGameDay("旅行确认");
+  render();
+}
+
+function handleCarRecordAction(recordId, action) {
+  const record = state.serviceRecords.find((item) => item.id === recordId && item.category === "cars");
+  if (!record) return;
+  record.carActions = record.carActions || {};
+  if (record.carActions[action]) {
+    addNotice("这项汽车后续已经处理过。");
+    render();
+    return;
+  }
+  const car = record.carBreakdown || {};
+  const plate = car.vehicle?.plate || currentProfile().licensePlate;
+  const actionMap = {
+    inspection: {
+      status: "年检完成 · 电子检验标志已更新",
+      source: "检测站",
+      notice: `${record.title} 已完成年检`,
+      text: `${plate} 年检已完成，电子检验标志已更新。系统提醒下次到期前还会继续花钱。`,
+    },
+    rescue: {
+      status: "救援车已派发 · 预计 45 分钟",
+      source: "道路救援",
+      notice: `${record.title} 已催派救援`,
+      text: `${plate} 救援工单已加急，师傅预计 45 分钟联系你，高速/地库可能另计费用。`,
+      call: true,
+    },
+    claim: {
+      status: "理赔/定损材料已提交",
+      source: "车险理赔",
+      notice: `${record.title} 已提交理赔/定损`,
+      text: `${plate} 的理赔或定损材料已提交。免赔额、配件差价和补充工时可能继续扣款。`,
+      call: true,
+    },
+    renew: {
+      status: "续保提醒已开启 · 到期前自动报价",
+      source: "车险续保",
+      notice: `${record.title} 已开启续保提醒`,
+      text: `${plate} 续保提醒已开启，到期前会推送交强险、商业险和车船税报价。`,
+    },
+    etc: {
+      status: "ETC 通行账单已同步",
+      source: "ETC 服务",
+      notice: `${record.title} 已同步通行账单`,
+      text: `${plate} ETC 通行账单已同步，过闸扣费会进入账单中心。`,
+    },
+    parking: {
+      status: "车牌抬杆测试通过",
+      source: "停车场",
+      notice: `${record.title} 已验证车牌抬杆`,
+      text: `${plate} 月租车位已验证抬杆，超期或换车牌会继续收费。`,
+    },
+  };
+  const result = actionMap[action];
+  if (!result) return;
+  record.carActions[action] = nowTime();
+  record.status = `${record.status || record.title} · ${result.status}`;
+  record.detail = `${record.detail || ""} ${result.text}`.trim();
+  addNotice(result.notice, { kind: "cars", category: "cars" });
+  addPhoneMessage(result.source, result.text);
+  if (result.call) {
+    state.calls.unshift({ id: makeId(), number: result.source, type: "呼入", result: result.status, time: nowTime(), recordId: record.id });
+    state.calls = state.calls.slice(0, 60);
+    state.stats.callsReceived += 1;
+  }
+  advanceGameDay(result.source);
   render();
 }
 
@@ -5934,6 +6419,27 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
+  const carOption = event.target.closest("[data-car-option]");
+  if (carOption) {
+    if (!guardTutorialAction("carOption", "", event)) return;
+    updateCarDraft({ [carOption.dataset.carOption]: carOption.dataset.carValue || "" });
+    return render();
+  }
+
+  const carToggle = event.target.closest("[data-car-toggle]");
+  if (carToggle) {
+    if (!guardTutorialAction("carToggle", "", event)) return;
+    const key = carToggle.dataset.carToggle;
+    updateCarDraft({ [key]: !currentCarDraft()[key] });
+    return render();
+  }
+
+  const carAction = event.target.closest("[data-car-action]");
+  if (carAction) {
+    if (!guardTutorialAction("carAction", "", event)) return;
+    return handleCarRecordAction(carAction.dataset.carRecord, carAction.dataset.carAction);
+  }
+
   const paymentMethod = event.target.closest("[data-payment-method]");
   if (paymentMethod) {
     if (!guardTutorialAction("paymentMethod", paymentMethod.dataset.paymentMethod, event)) return;
@@ -6013,6 +6519,7 @@ el.screen.addEventListener("input", (event) => {
   if (event.target.matches("[data-food-note]")) updateFoodDraft({ note: event.target.value });
   if (event.target.matches("[data-shop-remark]")) updateShopDraft({ remark: event.target.value });
   if (event.target.matches("[data-travel-remark]")) updateTravelDraft({ remark: event.target.value });
+  if (event.target.matches("[data-car-remark]")) updateCarDraft({ remark: event.target.value });
   if (event.target.matches("[data-sms-to]")) state.smsDraft.to = event.target.value;
   if (event.target.matches("[data-sms-text]")) state.smsDraft.text = event.target.value;
   saveState();
