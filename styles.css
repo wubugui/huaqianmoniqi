@@ -1589,6 +1589,14 @@ textarea {
   background: linear-gradient(135deg, #1d2433, #c02663);
 }
 
+.travel-panel {
+  background: linear-gradient(135deg, #fff, #eefbfb);
+}
+
+.travel-address {
+  background: linear-gradient(135deg, #12343b, #21b5b8);
+}
+
 .shop-cart {
   background: #fff;
   border: 1px solid #edf1f7;
@@ -1662,6 +1670,16 @@ textarea {
 .shop-buy-actions .primary {
   background: var(--blue);
   color: #fff;
+}
+
+.travel-action-row {
+  align-items: start;
+}
+
+.travel-action-buttons {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
 }
 
 .spend-list {
@@ -2344,6 +2362,16 @@ textarea {
     align-items: start;
     grid-template-columns: 1fr;
     justify-items: start;
+  }
+
+  .travel-action-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .travel-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .credit-actions {

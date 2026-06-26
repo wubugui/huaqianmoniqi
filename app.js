@@ -111,6 +111,47 @@ const shopCoupons = [
 const shopLargeTags = new Set(["家具", "家电"]);
 const shopImportedTags = new Set(["美妆"]);
 
+const travelPassengers = [
+  { id: "self", label: "本人", name: "张三", cert: "身份证 310101********1234", phone: "尾号 1234", note: "成人实名出行人" },
+  { id: "colleague", label: "同事", name: "李四", cert: "身份证 310101********7788", phone: "尾号 7788", note: "同行成人，需单独核验" },
+  { id: "child", label: "儿童", name: "小张", cert: "户口簿 310101********0088", phone: "监护人尾号 1234", note: "儿童/学生票，部分项目需补证件" },
+];
+
+const travelDateSlots = [
+  { id: "weekday", label: "工作日", feeRate: 0, desc: "普通日价格，库存看起来还算冷静" },
+  { id: "weekend", label: "周末", feeRate: 0.12, desc: "周末/热门入住日，平台会轻轻涨价" },
+  { id: "holiday", label: "节假日", feeRate: 0.35, desc: "节假日动态调价，价格非常有存在感" },
+];
+
+const travelServiceLevels = [
+  { id: "basic", label: "基础", fee: 0, desc: "默认座席/房型/车型，能成行但不体面" },
+  { id: "comfort", label: "舒适", fee: 68, desc: "选座、含早、优先取车或专人确认" },
+  { id: "premium", label: "尊享", fee: 188, desc: "宽座/高楼层/快速通道，把钱花在顺滑感上" },
+];
+
+const travelBaggageOptions = [
+  { id: "none", label: "无加购", fee: 0, desc: "只按基础额度出行" },
+  { id: "checked20", label: "20kg 托运", fee: 160, desc: "航司短信确认，柜台加购更贵" },
+  { id: "checked40", label: "40kg 托运", fee: 300, desc: "大件托运，值机柜台更有底气" },
+];
+
+const travelRefundRules = [
+  { id: "strict", label: "低价严格", feeRate: 0, refundRate: 0.58, desc: "便宜但退改扣得很真实" },
+  { id: "standard", label: "标准退改", feeRate: 0.025, refundRate: 0.82, desc: "可退可改，但服务费不会心软" },
+  { id: "flex", label: "安心退改", feeRate: 0.07, refundRate: 0.94, desc: "多花一笔，退订时少痛一点" },
+];
+
+const travelCoupons = [
+  { id: "trip-40", label: "出行满600减40", discount: 40, min: 600 },
+  { id: "hotel-80", label: "酒店满900减80", discount: 80, min: 900, tags: ["酒店", "度假"] },
+  { id: "holiday-120", label: "节假日满2000减120", discount: 120, min: 2000 },
+  { id: "none", label: "不使用", discount: 0, min: 0 },
+];
+
+const travelBaggageTags = new Set(["机票", "度假"]);
+const travelStayTags = new Set(["酒店", "度假", "预授权"]);
+const travelTrafficTags = new Set(["火车票", "机票", "改签", "行李", "权益"]);
+
 const moneyCountryNodes = [
   { id: "northport", name: "北港", kind: "港口", x: 18, y: 18 },
   { id: "snowcapital", name: "雪京", kind: "首都", x: 47, y: 12 },
@@ -532,6 +573,18 @@ const defaultState = {
     giftWrap: false,
     remark: "",
   },
+  travelDraft: {
+    passengerId: "self",
+    dateSlot: "weekday",
+    serviceLevel: "basic",
+    baggage: "none",
+    refundRule: "standard",
+    couponId: "trip-40",
+    insurance: true,
+    invoice: true,
+    autoCheckIn: true,
+    remark: "",
+  },
   shopCart: [],
   billRuns: [],
   profile: {
@@ -722,6 +775,7 @@ function loadState() {
       spendFilters: { ...defaultState.spendFilters, ...(parsed.spendFilters || {}) },
       foodDraft: { ...defaultState.foodDraft, ...(parsed.foodDraft || {}) },
       shopDraft: { ...defaultState.shopDraft, ...(parsed.shopDraft || {}) },
+      travelDraft: { ...defaultState.travelDraft, ...(parsed.travelDraft || {}) },
       shopCart: Array.isArray(parsed.shopCart) ? parsed.shopCart.slice(0, 24) : [],
       profile: { ...defaultState.profile, ...(parsed.profile || {}) },
       smsDraft: { ...defaultState.smsDraft, ...parsed.smsDraft },
@@ -842,6 +896,10 @@ function categoryProfileLine(category, item = {}) {
   const profile = currentProfile();
   if (category === "food" && item.foodBreakdown?.address) return `收货地址：${item.foodBreakdown.address.address}`;
   if (category === "shop" && item.shopBreakdown?.address) return `收货地址：${item.shopBreakdown.address.address}`;
+  if (category === "travel" && item.travelBreakdown?.passenger) {
+    const passenger = item.travelBreakdown.passenger;
+    return `出行人：${passenger.name} · ${passenger.cert} · ${passenger.phone}`;
+  }
   if (["shop", "food", "logistics", "recharge", "secondhand", "parenting", "pets"].includes(category)) return `收货地址：${profile.address}`;
   if (["travel", "tickets", "overseas", "health", "insurance", "education", "gov", "legal", "jobs"].includes(category)) return `实名信息：${profile.passenger}`;
   if (category === "cars" || category === "ride") return `车主/车牌：${profile.licensePlate}`;
@@ -881,6 +939,18 @@ function makePaymentMeta(category, item, payment) {
       protection: `${config.checkout} ${shop.freightInsurance ? "已购买运费险。" : "未购买运费险。"}${shop.giftWrap ? " 已加礼品包装。" : ""}${shop.remark ? ` 备注：${shop.remark}` : ""}`,
     };
   }
+  if (category === "travel" && item.travelBreakdown) {
+    const travel = item.travelBreakdown;
+    return {
+      orderNo: newOrderNumber(category),
+      merchant: travel.merchant,
+      channel: "MoneyOS 旅行",
+      serviceFee: travel.platformFee,
+      invoice: travel.invoice ? currentProfile().invoiceTitle : "未申请发票",
+      fulfillment: `${travel.dateSlot.label} · ${travel.route} · ${travel.fulfillmentLabel}`,
+      protection: `${config.checkout} ${travel.returnRule} ${travel.insurance ? "已购出行保障。" : "未购出行保障。"}${travel.autoCheckIn ? " 已开启值机/入住助手。" : ""}${travel.remark ? ` 备注：${travel.remark}` : ""}`,
+    };
+  }
   const fulfillment = item.loan
     ? `${item.loan.lender || "贷款机构"}月供：${item.loan.months} 期，每期 ${money(item.loan.monthly)}`
     : item.hold
@@ -906,6 +976,10 @@ function checkoutLineFor(category, item) {
   if (category === "shop" && item.shopBreakdown) {
     lines.push(`实付含${item.shopBreakdown.summary}`);
     lines.push(item.shopBreakdown.returnRule);
+  }
+  if (category === "travel" && item.travelBreakdown) {
+    lines.push(`实付含${item.travelBreakdown.summary}`);
+    lines.push(item.travelBreakdown.returnRule);
   }
   if (item.hold) lines.push(`押金/预授权，可退约 ${money(Math.floor(item.price * (item.refundRate || 1)))}`);
   if (item.loan) lines.push(`首付后生成 ${item.loan.months} 期月供，每期 ${money(item.loan.monthly)}`);
@@ -2235,6 +2309,189 @@ function shopOrderBreakdown(item) {
   };
 }
 
+function currentTravelDraft() {
+  const draft = { ...defaultState.travelDraft, ...(state.travelDraft || {}) };
+  if (!travelPassengers.some((item) => item.id === draft.passengerId)) draft.passengerId = defaultState.travelDraft.passengerId;
+  if (!travelDateSlots.some((item) => item.id === draft.dateSlot)) draft.dateSlot = defaultState.travelDraft.dateSlot;
+  if (!travelServiceLevels.some((item) => item.id === draft.serviceLevel)) draft.serviceLevel = defaultState.travelDraft.serviceLevel;
+  if (!travelBaggageOptions.some((item) => item.id === draft.baggage)) draft.baggage = defaultState.travelDraft.baggage;
+  if (!travelRefundRules.some((item) => item.id === draft.refundRule)) draft.refundRule = defaultState.travelDraft.refundRule;
+  if (!travelCoupons.some((item) => item.id === draft.couponId)) draft.couponId = defaultState.travelDraft.couponId;
+  draft.insurance = draft.insurance !== false;
+  draft.invoice = draft.invoice !== false;
+  draft.autoCheckIn = draft.autoCheckIn !== false;
+  draft.remark = String(draft.remark || "").trim().slice(0, 60);
+  return draft;
+}
+
+function updateTravelDraft(patch) {
+  state.travelDraft = { ...currentTravelDraft(), ...patch };
+}
+
+function travelRouteFor(item) {
+  const routes = {
+    train: "上海虹桥 → 北京南 G88",
+    flight: "上海浦东 T2 → 深圳宝安 MU5200",
+    hotel: "北京国贸商务酒店 · 两晚大床房",
+    resort: "上海 → MoneyBay 海岛 · 四天三晚",
+    ticket: "苏州乐园 · 10:00-12:00 入园",
+    "car-rent": "北京南站取车 → 首都机场还车",
+    "hotel-hold": "北京国贸商务酒店前台 · 离店释放",
+    "visa-service": "MoneyOS 签证中心 → 领馆预约",
+    "flight-change": "MU5200 → MU5318 改签确认",
+    baggage: "MU5200 航班 · 托运行李服务",
+    "airport-lounge": "上海浦东 T2 · 贵宾厅券码",
+    "wifi-hold": "出境 Wi-Fi 柜台取还设备",
+  };
+  return routes[item.id] || `${item.name} · MoneyOS 行程`;
+}
+
+function travelMerchantFor(item) {
+  if (item.tag === "火车票") return "MoneyOS 铁路票务";
+  if (["机票", "改签", "行李", "权益"].includes(item.tag)) return "MoneyOS 航空服务";
+  if (travelStayTags.has(item.tag)) return "MoneyOS 酒店旅行";
+  if (item.tag === "门票") return "MoneyOS 景区预约";
+  if (item.tag === "租车") return "MoneyOS 租车";
+  if (item.tag === "签证") return "MoneyOS 签证中心";
+  return "MoneyOS 旅行";
+}
+
+function travelFulfillmentLabel(item) {
+  if (item.tag === "火车票") return "出票后刷身份证进站";
+  if (item.tag === "机票") return "出票 + 在线值机";
+  if (item.tag === "酒店") return "入住人资料预填";
+  if (item.tag === "度假") return "出团通知 + 接送确认";
+  if (item.tag === "门票") return "实名预约入园";
+  if (item.tag === "租车") return "取车验车单";
+  if (item.tag === "预授权" || item.tag === "押金") return "柜台冻结/离店验收释放";
+  if (item.tag === "签证") return "材料清单核验";
+  if (item.tag === "改签") return "新行程短信确认";
+  if (item.tag === "行李") return "航司附加服务确认";
+  if (item.tag === "权益") return "券码核销";
+  return "行程确认";
+}
+
+function travelServiceLabel(item, serviceLevel) {
+  if (serviceLevel.id === "basic") return serviceLevel.desc;
+  if (travelTrafficTags.has(item.tag)) return serviceLevel.id === "premium" ? "前排/靠窗偏好 + 快速通道" : "靠窗/连坐偏好";
+  if (travelStayTags.has(item.tag)) return serviceLevel.id === "premium" ? "高楼层房型 + 延迟退房" : "含早/安静房偏好";
+  if (item.tag === "租车") return serviceLevel.id === "premium" ? "升级车型 + 免排队取车" : "车型优先确认";
+  if (item.tag === "门票") return serviceLevel.id === "premium" ? "快速入园 + 专人提醒" : "热门时段预约";
+  if (item.tag === "签证") return serviceLevel.id === "premium" ? "加急审核 + 专人复核" : "材料复核";
+  return serviceLevel.desc;
+}
+
+function travelInsuranceFee(item, base) {
+  if (item.asset === "policy") return 0;
+  if (item.hold) return 0;
+  if (item.tag === "租车") return 48;
+  if (item.tag === "门票") return 12;
+  if (item.tag === "酒店") return 28;
+  if (item.tag === "签证") return 32;
+  if (item.tag === "权益") return 0;
+  return Math.max(15, Math.ceil(base * 0.018));
+}
+
+function travelRefundRateFor(item, refundRule) {
+  if (item.hold) return Math.max(0.1, Math.min(1, Number(item.refundRate) || 1));
+  if (item.tag === "签证") return 0.25;
+  if (item.tag === "改签") return 0.18;
+  if (item.tag === "行李") return 0.45;
+  if (item.tag === "权益") return 0.55;
+  if (item.tag === "门票") return Math.min(0.9, refundRule.refundRate + 0.02);
+  return Math.max(0.1, Math.min(0.98, refundRule.refundRate));
+}
+
+function travelReturnRuleFor(item, refundRate) {
+  if (item.hold) return `预授权按酒店/设备验收释放，预计可退 ${money(Math.floor(item.price * (item.refundRate || 1)))}`;
+  if (item.tag === "签证") return "签证材料审核后服务费不退，只退未发生代缴";
+  if (item.tag === "改签") return "改签费和舱位差价支付后基本不退";
+  if (item.tag === "行李") return "行李额起飞前可退部分，起飞后不可退";
+  if (item.tag === "权益") return "券码未核销前可退部分，过期不退";
+  return `退订预计可退 ${Math.round(refundRate * 100)}%，平台和供应商会扣费`;
+}
+
+function travelBookingBreakdown(item) {
+  const draft = currentTravelDraft();
+  const passenger = travelPassengers.find((entry) => entry.id === draft.passengerId) || travelPassengers[0];
+  const dateSlot = travelDateSlots.find((entry) => entry.id === draft.dateSlot) || travelDateSlots[0];
+  const serviceLevel = travelServiceLevels.find((entry) => entry.id === draft.serviceLevel) || travelServiceLevels[0];
+  const baggage = travelBaggageOptions.find((entry) => entry.id === draft.baggage) || travelBaggageOptions[0];
+  const refundRule = travelRefundRules.find((entry) => entry.id === draft.refundRule) || travelRefundRules[1];
+  const coupon = travelCoupons.find((entry) => entry.id === draft.couponId) || travelCoupons[0];
+  const base = Math.max(1, Math.floor(Number(item.price) || 0));
+  const demandFee = Math.floor(base * dateSlot.feeRate);
+  const serviceFee = Math.max(0, item.hold ? 0 : Math.floor(serviceLevel.fee * (base > 5000 ? 1.7 : base > 1000 ? 1.25 : 1)));
+  const baggageFee = travelBaggageTags.has(item.tag) && item.id !== "baggage" ? baggage.fee : 0;
+  const insuranceFee = draft.insurance ? travelInsuranceFee(item, base) : 0;
+  const refundProtectFee = item.hold ? 0 : Math.floor(base * refundRule.feeRate);
+  const autoCheckInFee = draft.autoCheckIn && !item.hold ? (travelStayTags.has(item.tag) ? 16 : 25) : 0;
+  const platformFee = item.hold ? 0 : Math.max(3, Math.floor((base + demandFee) * 0.012));
+  const passengerDiscount = passenger.id === "child" && ["火车票", "机票", "门票"].includes(item.tag) ? Math.floor(base * (item.tag === "机票" ? 0.25 : 0.35)) : 0;
+  const couponBase = base + demandFee + serviceFee + baggageFee + insuranceFee + refundProtectFee + autoCheckInFee + platformFee - passengerDiscount;
+  const couponAllowed = couponBase >= Math.max(0, coupon.min || 0) && (!coupon.tags || coupon.tags.includes(item.tag));
+  const couponDiscount = couponAllowed ? Math.min(coupon.discount, Math.max(0, couponBase - 1)) : 0;
+  const total = Math.max(1, couponBase - couponDiscount);
+  const refundRate = travelRefundRateFor(item, refundRule);
+  const refundFee = Math.max(0, total - Math.floor(total * refundRate));
+  const lines = [
+    ["基础价格", base],
+    ["日期/库存浮动", demandFee],
+    ["规格/选座服务", serviceFee],
+    ["额外行李", baggageFee],
+    ["出行保障", insuranceFee],
+    ["退改保障", refundProtectFee],
+    ["值机/入住助手", autoCheckInFee],
+    ["平台服务费", platformFee],
+    ["儿童/学生优惠", -passengerDiscount],
+    ["出行券", -couponDiscount],
+  ].filter(([, amount]) => amount);
+  const summaryParts = [
+    demandFee ? `浮动 ${money(demandFee)}` : "",
+    serviceFee ? `规格 ${money(serviceFee)}` : "",
+    baggageFee ? `行李 ${money(baggageFee)}` : "",
+    insuranceFee ? `保障 ${money(insuranceFee)}` : "",
+    refundProtectFee ? `退改 ${money(refundProtectFee)}` : "",
+    autoCheckInFee ? `助手 ${money(autoCheckInFee)}` : "",
+    platformFee ? `服务费 ${money(platformFee)}` : "",
+    passengerDiscount ? `儿童优惠 -${money(passengerDiscount)}` : "",
+    couponDiscount ? `券 -${money(couponDiscount)}` : "",
+  ].filter(Boolean);
+  const returnRule = travelReturnRuleFor(item, refundRate);
+  return {
+    passenger,
+    dateSlot,
+    serviceLevel,
+    baggage,
+    refundRule,
+    merchant: travelMerchantFor(item),
+    route: travelRouteFor(item),
+    fulfillmentLabel: travelFulfillmentLabel(item),
+    serviceLabel: travelServiceLabel(item, serviceLevel),
+    base,
+    demandFee,
+    serviceFee,
+    baggageFee,
+    insuranceFee,
+    refundProtectFee,
+    autoCheckInFee,
+    platformFee,
+    passengerDiscount,
+    couponDiscount,
+    total,
+    lines,
+    summary: summaryParts.length ? summaryParts.join("、") : "无额外费用",
+    couponLabel: couponDiscount ? coupon.label : "未用出行券",
+    insurance: Boolean(insuranceFee),
+    invoice: draft.invoice,
+    autoCheckIn: Boolean(autoCheckInFee),
+    remark: draft.remark,
+    returnRule,
+    refundRate,
+    refundFee,
+  };
+}
+
 function catalogItemForCheckout(category, item) {
   if (category === "food") {
     const foodBreakdown = foodOrderBreakdown(item);
@@ -2254,11 +2511,21 @@ function catalogItemForCheckout(category, item) {
       shopBreakdown,
     };
   }
+  if (category === "travel") {
+    const travelBreakdown = travelBookingBreakdown(item);
+    return {
+      ...item,
+      price: travelBreakdown.total,
+      desc: `${item.desc} 实付包含${travelBreakdown.summary}。`,
+      travelBreakdown,
+      refundRate: travelBreakdown.refundRate,
+    };
+  }
   return item;
 }
 
 function renderCheckoutBreakdown(item) {
-  const breakdown = item.foodBreakdown || item.shopBreakdown;
+  const breakdown = item.foodBreakdown || item.shopBreakdown || item.travelBreakdown;
   if (!breakdown?.lines?.length) return "";
   return `
     <div class="checkout-breakdown">
@@ -3208,6 +3475,180 @@ function renderShopSpendList() {
   `;
 }
 
+function renderTravelControlPanel() {
+  const draft = currentTravelDraft();
+  const passenger = travelPassengers.find((entry) => entry.id === draft.passengerId) || travelPassengers[0];
+  return `
+    <section class="food-panel travel-panel">
+      <div class="food-address travel-address">
+        <span>实名出行</span>
+        <strong>${escapeHtml(passenger.name)} · ${escapeHtml(passenger.label)}</strong>
+        <p>${escapeHtml(passenger.cert)} · ${escapeHtml(passenger.phone)} · ${escapeHtml(passenger.note)}</p>
+      </div>
+      <div class="food-segment" aria-label="出行人">
+        ${travelPassengers
+          .map(
+            (item) => `
+              <button data-travel-option="passengerId" data-travel-value="${item.id}" aria-pressed="${draft.passengerId === item.id ? "true" : "false"}">
+                ${escapeHtml(item.label)}
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+      <div class="food-section">
+        <span>日期/库存</span>
+        <div class="food-option-grid">
+          ${travelDateSlots
+            .map(
+              (item) => `
+                <button data-travel-option="dateSlot" data-travel-value="${item.id}" aria-pressed="${draft.dateSlot === item.id ? "true" : "false"}">
+                  <strong>${escapeHtml(item.label)}</strong>
+                  <small>${item.feeRate ? `+${Math.round(item.feeRate * 100)}%` : "不加价"} · ${escapeHtml(item.desc)}</small>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>规格/选座/房型</span>
+        <div class="food-option-grid">
+          ${travelServiceLevels
+            .map(
+              (item) => `
+                <button data-travel-option="serviceLevel" data-travel-value="${item.id}" aria-pressed="${draft.serviceLevel === item.id ? "true" : "false"}">
+                  <strong>${escapeHtml(item.label)} · ${money(item.fee)}</strong>
+                  <small>${escapeHtml(item.desc)}</small>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>行李</span>
+        <div class="food-chip-row">
+          ${travelBaggageOptions
+            .map(
+              (item) => `
+                <button data-travel-option="baggage" data-travel-value="${item.id}" aria-pressed="${draft.baggage === item.id ? "true" : "false"}">
+                  ${escapeHtml(item.label)}${item.fee ? ` ${money(item.fee)}` : ""}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>退改规则</span>
+        <div class="food-option-grid">
+          ${travelRefundRules
+            .map(
+              (item) => `
+                <button data-travel-option="refundRule" data-travel-value="${item.id}" aria-pressed="${draft.refundRule === item.id ? "true" : "false"}">
+                  <strong>${escapeHtml(item.label)}</strong>
+                  <small>${item.feeRate ? `+${Math.round(item.feeRate * 100)}%` : "不加价"} · 约退 ${Math.round(item.refundRate * 100)}%</small>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>出行券</span>
+        <div class="food-chip-row">
+          ${travelCoupons
+            .map(
+              (item) => `
+                <button data-travel-option="couponId" data-travel-value="${item.id}" aria-pressed="${draft.couponId === item.id ? "true" : "false"}">
+                  ${escapeHtml(item.label)}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-toggles">
+        <button data-travel-toggle="insurance" aria-pressed="${draft.insurance ? "true" : "false"}">出行保障</button>
+        <button data-travel-toggle="autoCheckIn" aria-pressed="${draft.autoCheckIn ? "true" : "false"}">值机/入住助手</button>
+        <button data-travel-toggle="invoice" aria-pressed="${draft.invoice ? "true" : "false"}">发票</button>
+      </div>
+      <textarea data-travel-remark maxlength="60" placeholder="座位、到店时间、航班偏好、发票备注">${escapeHtml(draft.remark)}</textarea>
+    </section>
+  `;
+}
+
+function renderTravelSpendList() {
+  const items = spendCatalogs.travel || [];
+  const activeTag = state.spendFilters?.travel || "全部";
+  const tags = ["全部", ...Array.from(new Set(items.map((item) => item.tag))).filter(Boolean)];
+  const visibleItems = activeTag === "全部" ? items : items.filter((item) => item.tag === activeTag);
+  return `
+    <div class="spend-filter" aria-label="旅行分类筛选">
+      ${tags
+        .map(
+          (tag) => `
+            <button data-spend-filter-category="travel" data-spend-filter-tag="${escapeHtml(tag)}" aria-pressed="${activeTag === tag ? "true" : "false"}">
+              ${escapeHtml(tag)}
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+    <div class="spend-list travel-spend-list">
+      ${visibleItems
+        .map((baseItem) => {
+          const item = catalogItemForCheckout("travel", baseItem);
+          const travel = item.travelBreakdown;
+          return `
+            <article class="spend-item travel-spend-item">
+              <div>
+                <span class="spend-tag">${escapeHtml(baseItem.tag)}</span>
+                <strong>${escapeHtml(baseItem.name)}</strong>
+                <p>${escapeHtml(baseItem.desc)}</p>
+                <small class="checkout-line">${escapeHtml(travel ? `${travel.route} · ${travel.summary} · ${travel.returnRule}` : checkoutLineFor("travel", baseItem))}</small>
+                ${renderSpendFlags(item)}
+              </div>
+              <div class="spend-action">
+                <small>标价 ${money(baseItem.price)}</small>
+                <b>${money(item.price)}</b>
+                <button class="primary" data-spend-category="travel" data-spend-id="${baseItem.id}">预订</button>
+              </div>
+            </article>
+          `;
+        })
+        .join("")}
+      ${visibleItems.length ? "" : `<p class="empty">这个分类下暂时没有可花钱项目。</p>`}
+    </div>
+  `;
+}
+
+function renderTravelAfterSales() {
+  const bookings = state.bookings.filter((booking) => booking.category === "travel").slice(0, 5);
+  if (!bookings.length) return `<p class="empty">预订旅行后可以在这里值机、入住或退订。</p>`;
+  return bookings
+    .map((booking) => {
+      const travel = booking.travelBreakdown || {};
+      const refundable = Math.max(1, Math.floor(booking.amount * (Number(travel.refundRate) || Number(booking.refundRate) || 0.82)));
+      const checkInDone = Boolean(booking.checkInStatus);
+      return `
+        <div class="list-row refund-row travel-action-row">
+          <div>
+            <strong>${escapeHtml(booking.title)}</strong>
+            <span>${escapeHtml(booking.status)} · ${money(booking.amount)}</span>
+            <small class="record-meta">${escapeHtml(travel.fulfillmentLabel || "行程确认")} · ${escapeHtml(travel.returnRule || "退订按平台规则扣费")} · 预计可退 ${money(refundable)}</small>
+          </div>
+          <div class="travel-action-buttons">
+            <button data-travel-checkin="${booking.id}" ${checkInDone ? "disabled" : ""}>${checkInDone ? "已确认" : "值机/入住"}</button>
+            <button data-refund-booking="${booking.id}" ${booking.refundStatus ? "disabled" : ""}>${booking.refundStatus || "退订"}</button>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
 function renderFoodApp() {
   return `
     ${appHeader("外卖", "点餐、买菜、跑腿和会员")}
@@ -3259,13 +3700,20 @@ function renderShopApp() {
 
 function renderTravelApp() {
   return `
-    ${appHeader("旅行", "交通、住宿、门票和保险")}
+    ${appHeader("旅行", "出行人、行李、退改、值机和售后")}
     <section class="app-body commerce-body">
       ${renderPaymentSummary()}
+      ${renderTravelControlPanel()}
       <h3>可预订</h3>
-      ${renderSpendList("travel", "预订")}
+      ${renderTravelSpendList()}
       <h3>行程订单</h3>
-      ${renderRecordList(state.bookings, "还没有旅行订单。")}
+      ${renderRecordList(state.bookings.filter((booking) => booking.category === "travel"), "还没有旅行订单。")}
+      <h3>值机/入住与退订</h3>
+      ${renderTravelAfterSales()}
+      <h3>押金/预授权</h3>
+      ${renderHoldList("travel")}
+      <h3>售后退款</h3>
+      ${renderRefundList()}
     </section>
   `;
 }
@@ -4453,22 +4901,31 @@ function buyCatalogItem(category, itemId) {
     });
     if (checkoutWasCart) state.shopCart = [];
   } else if (category === "travel") {
+    const travel = item.travelBreakdown;
     postRecord = {
       id: makeId(),
       category,
       title: item.name,
       amount: payment.amount,
-      status: item.status,
-      detail: item.desc,
+      status: `${item.status || "行程已确认"} · ${travel?.fulfillmentLabel || "等待履约"} · ${travel?.dateSlot?.label || "默认日期"}`,
+      detail: travel
+        ? `${baseItem.desc} ${travel.passenger.name}：${travel.passenger.cert}；${travel.route}；${travel.serviceLabel}；${travel.baggageFee ? `${travel.baggage.label} ${money(travel.baggageFee)}` : "未加购行李"}；${travel.insurance ? "含出行保障" : "未购保障"}；${travel.invoice ? "已申请发票" : "未申请发票"}。${travel.remark ? `备注：${travel.remark}` : ""}`
+        : item.desc,
       meta: payment.meta,
+      tracking: travel ? `${travel.route} · ${travel.fulfillmentLabel} · ${travel.returnRule}` : "行程已生成",
+      travelBreakdown: travel,
+      refundRate: travel?.refundRate,
       time: nowTime(),
       createdAt: Date.now(),
-      cardName: payment.card?.name || "",
-      cardNumber: payment.card?.number || "",
+      cardName: payment.card?.name || (payment.credit ? "信用账户" : ""),
+      cardNumber: payment.card?.number || (payment.credit ? "credit" : ""),
     };
     state.bookings.unshift(postRecord);
     state.bookings = state.bookings.slice(0, 60);
     state.stats.travelBookings += 1;
+    if (travel) {
+      addPhoneMessage("MoneyOS旅行", `${item.name} 已确认，${travel.passenger.name}，${travel.route}。${travel.fulfillmentLabel}，${travel.returnRule}。`);
+    }
   } else if (category === "cars") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
     if (item.asset === "policy") addPolicy(item, payment);
@@ -4790,6 +5247,84 @@ function requestRefund(orderId) {
   addNotice(`${order.title} 已退款 ${money(refundAmount)}，扣费 ${money(refundDeduction)}`);
   advanceGameDay("售后退款");
   scheduleMoneyAftercare("售后客服", "退款回访", `${order.title} 的退款已处理，扣除 ${money(refundDeduction)}。钱回来了一部分，消费痕迹还留在手机里。`, { category: "refund", call: true });
+  render();
+}
+
+function requestBookingRefund(bookingId) {
+  const booking = state.bookings.find((item) => item.id === bookingId && item.category === "travel");
+  if (!booking) return;
+  if (booking.refundStatus) {
+    addNotice("这笔行程已经退订过。");
+    render();
+    return;
+  }
+  const travel = booking.travelBreakdown || {};
+  const refundRate = Math.max(0.1, Math.min(1, Number(travel.refundRate) || Number(booking.refundRate) || 0.82));
+  const refundAmount = Math.max(1, Math.floor(booking.amount * refundRate));
+  const refundDeduction = Math.max(0, booking.amount - refundAmount);
+  const creditRefund = booking.cardNumber === "credit";
+  const card = creditRefund ? null : cardByNumber(booking.cardNumber) || state.cards[0];
+  if (!creditRefund && !card) {
+    addNotice("退订失败：没有可退回的银行卡。");
+    render();
+    return;
+  }
+
+  if (creditRefund) {
+    state.credit.used = Math.max(0, Math.floor(Number(state.credit.used) || 0) - refundAmount);
+  } else {
+    card.balance += refundAmount;
+  }
+  booking.refundStatus = "退订退款已退回";
+  booking.status = `行程已退订 · 扣费 ${money(refundDeduction)}`;
+  state.refunds.unshift({
+    id: makeId(),
+    orderId: booking.id,
+    title: `退订：${booking.title}`,
+    amount: refundAmount,
+    status: `${creditRefund ? "已恢复信用额度" : "已退回原银行卡"}，${travel.returnRule || "按供应商退改规则扣费"}，扣除 ${money(refundDeduction)}`,
+    meta: booking.meta,
+    time: nowTime(),
+    createdAt: Date.now(),
+  });
+  state.refunds = state.refunds.slice(0, 60);
+  state.stats.refunds += 1;
+  state.stats.refundAmount += refundAmount;
+  recordTransaction({
+    direction: "in",
+    title: `退订：${booking.title}`,
+    category: "旅行售后",
+    amount: refundAmount,
+    cardName: card?.name || "信用账户",
+    cardNumber: card?.number || "credit",
+    detail: creditRefund ? "恢复信用额度" : "原路退回",
+  });
+  addNotice(`${booking.title} 已退订，退回 ${money(refundAmount)}，扣费 ${money(refundDeduction)}`);
+  advanceGameDay("旅行退订");
+  scheduleMoneyAftercare("MoneyOS旅行客服", "退订回访", `${booking.title} 已退订，扣除 ${money(refundDeduction)}。行程没了，账单痕迹还在。`, { category: "travel", call: true });
+  render();
+}
+
+function confirmTravelCheckIn(bookingId) {
+  const booking = state.bookings.find((item) => item.id === bookingId && item.category === "travel");
+  if (!booking) return;
+  if (booking.refundStatus) {
+    addNotice("已退订的行程不能再值机或入住。");
+    render();
+    return;
+  }
+  if (booking.checkInStatus) {
+    addNotice("这笔行程已经确认过。");
+    render();
+    return;
+  }
+  const travel = booking.travelBreakdown || {};
+  const label = travel.fulfillmentLabel || "行程确认";
+  booking.checkInStatus = `${label}已确认`;
+  booking.status = `${booking.status || "行程已确认"} · ${booking.checkInStatus}`;
+  addNotice(`${booking.title} ${booking.checkInStatus}`);
+  addPhoneMessage("MoneyOS旅行", `${booking.title} 已完成${label}。${travel.route ? `行程：${travel.route}。` : ""}请继续为下一笔旅途消费做准备。`);
+  advanceGameDay("旅行确认");
   render();
 }
 
@@ -5274,6 +5809,18 @@ el.screen.addEventListener("click", (event) => {
     return requestRefund(refundOrder.dataset.refundOrder);
   }
 
+  const refundBooking = event.target.closest("[data-refund-booking]");
+  if (refundBooking) {
+    if (!guardTutorialAction("refundBooking", "", event)) return;
+    return requestBookingRefund(refundBooking.dataset.refundBooking);
+  }
+
+  const travelCheckIn = event.target.closest("[data-travel-checkin]");
+  if (travelCheckIn) {
+    if (!guardTutorialAction("travelCheckIn", "", event)) return;
+    return confirmTravelCheckIn(travelCheckIn.dataset.travelCheckin);
+  }
+
   const shipmentSign = event.target.closest("[data-sign-shipment]");
   if (shipmentSign) {
     if (!guardTutorialAction("signShipment", "", event)) return;
@@ -5372,6 +5919,21 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
+  const travelOption = event.target.closest("[data-travel-option]");
+  if (travelOption) {
+    if (!guardTutorialAction("travelOption", "", event)) return;
+    updateTravelDraft({ [travelOption.dataset.travelOption]: travelOption.dataset.travelValue || "" });
+    return render();
+  }
+
+  const travelToggle = event.target.closest("[data-travel-toggle]");
+  if (travelToggle) {
+    if (!guardTutorialAction("travelToggle", "", event)) return;
+    const key = travelToggle.dataset.travelToggle;
+    updateTravelDraft({ [key]: !currentTravelDraft()[key] });
+    return render();
+  }
+
   const paymentMethod = event.target.closest("[data-payment-method]");
   if (paymentMethod) {
     if (!guardTutorialAction("paymentMethod", paymentMethod.dataset.paymentMethod, event)) return;
@@ -5450,6 +6012,7 @@ el.screen.addEventListener("input", (event) => {
   if (event.target.matches("[data-person-contact], [data-person-amount], [data-person-note]")) updatePersonTransferDraft();
   if (event.target.matches("[data-food-note]")) updateFoodDraft({ note: event.target.value });
   if (event.target.matches("[data-shop-remark]")) updateShopDraft({ remark: event.target.value });
+  if (event.target.matches("[data-travel-remark]")) updateTravelDraft({ remark: event.target.value });
   if (event.target.matches("[data-sms-to]")) state.smsDraft.to = event.target.value;
   if (event.target.matches("[data-sms-text]")) state.smsDraft.text = event.target.value;
   saveState();
