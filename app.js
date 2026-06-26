@@ -21,6 +21,7 @@ const apps = {
   carrier: { name: "营业厅", icon: "号", color: "#ff8f2d", price: 0, desc: "购买手机号、充话费、看一些没用的套餐。" },
   bank: { name: "XX银行", icon: "行", color: "#d72638", price: 0, desc: "办理银行卡，把点钞里的钱转进去。" },
   wallet: { name: "钱包", icon: "付", color: "#00a870", price: 0, desc: "给联系人转账、扫码付款、查看每一笔支出。" },
+  spend: { name: "花钱", icon: "花", color: "#ef4444", price: 0, desc: "外卖、购物、大件、服务、投资和乱七八糟的付款入口。" },
   billhub: { name: "账单", icon: "账", color: "#0f766e", price: 0, desc: "总览订单、押金、订阅、贷款和每月固定扣款。" },
   food: { name: "外卖", icon: "饭", color: "#ffc533", price: 0, desc: "点餐、买菜、跑腿、会员，全都从银行卡扣钱。" },
   shop: { name: "购物", icon: "买", color: "#ff5fa2", price: 0, desc: "数码、日用、家具、生鲜、奢侈品，像真实电商一样下单。" },
@@ -55,6 +56,50 @@ const apps = {
   events: { name: "活动", icon: "礼", color: "#be123c", price: 0, desc: "婚礼、宴会、摄影、会务、派对、团建和活动保险。" },
   security: { name: "安防", icon: "安", color: "#1f2937", price: 0, desc: "智能门锁、监控云存储、隐私安全、数据恢复和家庭报警。" },
 };
+
+const storeDownloadAppIds = ["carrier", "bank", "wallet", "spend", "logistics", "billhub"];
+const homeAppIds = ["cash", "phone", "sms", "store", "carrier", "bank", "wallet", "spend", "logistics", "billhub"];
+const spendHubCategoryIds = [
+  "food",
+  "shop",
+  "travel",
+  "cars",
+  "property",
+  "services",
+  "entertainment",
+  "stocks",
+  "ride",
+  "local",
+  "health",
+  "insurance",
+  "credit",
+  "subscriptions",
+  "secondhand",
+  "gov",
+  "education",
+  "beauty",
+  "pets",
+  "recharge",
+  "social",
+  "rental",
+  "office",
+  "renovation",
+  "parenting",
+  "tickets",
+  "overseas",
+  "legal",
+  "jobs",
+  "events",
+  "security",
+];
+const appAliases = Object.fromEntries(spendHubCategoryIds.map((id) => [id, "spend"]));
+const spendHubShelves = [
+  { id: "daily", title: "日常爽花", subtitle: "高频小额，扣得很顺手。", categories: ["food", "shop", "ride", "local", "recharge", "social", "entertainment"] },
+  { id: "desire", title: "欲望加购", subtitle: "看得见订单、看不见实物。", categories: ["shop", "secondhand", "tickets", "beauty", "pets", "parenting", "education"] },
+  { id: "big", title: "大额快感", subtitle: "房车旅行装修，确认付款前心跳变重。", categories: ["travel", "cars", "property", "renovation", "rental", "office", "security"] },
+  { id: "risk", title: "金融刺激", subtitle: "额度、持仓、保单和每月账单一起上桌。", categories: ["stocks", "credit", "insurance", "subscriptions", "gov", "overseas", "legal", "jobs", "events", "health", "services"] },
+];
+const spendHubDefaultCategory = spendHubShelves[0].categories[1];
 
 const contacts = [
   { id: "friend", name: "阿杰", phone: "13900008888", note: "朋友借款/AA 收款", presets: [52, 200, 888] },
@@ -584,6 +629,7 @@ const defaultState = {
   personTransferDraft: { contactId: "friend", amount: 200, note: "" },
   checkoutDraft: null,
   checkoutMethod: "card",
+  spendHub: { shelf: "daily", category: spendHubDefaultCategory },
   spendFilters: {},
   foodDraft: {
     addressId: "home",
@@ -813,6 +859,7 @@ function loadState() {
       personTransferDraft: { ...defaultState.personTransferDraft, ...parsed.personTransferDraft },
       checkoutDraft: parsed.checkoutDraft?.category && parsed.checkoutDraft?.itemId ? parsed.checkoutDraft : null,
       checkoutMethod: parsed.checkoutMethod === "credit" ? "credit" : "card",
+      spendHub: { ...defaultState.spendHub, ...(parsed.spendHub || {}) },
       spendFilters: { ...defaultState.spendFilters, ...(parsed.spendFilters || {}) },
       foodDraft: { ...defaultState.foodDraft, ...(parsed.foodDraft || {}) },
       shopDraft: { ...defaultState.shopDraft, ...(parsed.shopDraft || {}) },
@@ -1409,14 +1456,15 @@ function advanceGameDay(reason = "交易") {
 }
 
 function setApp(appId) {
-  if (appId !== "home" && !state.installed.includes(appId)) {
-    addNotice(`${apps[appId]?.name || "这个 App"}还没安装。`);
+  const targetAppId = normalizeAppId(appId);
+  if (targetAppId !== "home" && !isAppInstalled(targetAppId)) {
+    addNotice(`${apps[targetAppId]?.name || "这个 App"}还没安装。`);
     state.activeApp = "store";
-  } else if (appId !== "home" && !canUseApp(appId)) {
-    addNotice(blockReasonForApp(appId));
-    state.activeApp = state.installed.includes("carrier") ? "carrier" : "store";
+  } else if (targetAppId !== "home" && !canUseApp(targetAppId)) {
+    addNotice(blockReasonForApp(targetAppId));
+    state.activeApp = isAppInstalled("carrier") ? "carrier" : "store";
   } else {
-    state.activeApp = appId;
+    state.activeApp = targetAppId;
   }
   advanceTutorial(state.activeApp === "home" ? "home" : "open", state.activeApp);
   render();
@@ -1757,7 +1805,8 @@ function appHeader(title, subtitle = "") {
 function render() {
   captureScrollPositions(renderedAppId);
   normalizeTutorialProgress();
-  if (state.activeApp !== "home" && !canUseApp(state.activeApp)) state.activeApp = state.installed.includes("carrier") ? "carrier" : "store";
+  state.activeApp = normalizeAppId(state.activeApp);
+  if (state.activeApp !== "home" && !canUseApp(state.activeApp)) state.activeApp = isAppInstalled("carrier") ? "carrier" : "store";
   const activeTutorial = tutorialActive();
   el.phoneClock.textContent = nowTime();
   el.phoneSignal.textContent = activeTutorial ? "☎ 神秘电话" : statusText();
@@ -1774,6 +1823,7 @@ function render() {
     carrier: renderCarrierApp,
     bank: renderBankApp,
     wallet: renderWalletApp,
+    spend: renderSpendHubApp,
     billhub: renderBillHubApp,
     food: renderFoodApp,
     shop: renderShopApp,
@@ -1819,7 +1869,7 @@ function render() {
 }
 
 function renderHome() {
-  const installedApps = state.installed.map((id) => apps[id]).filter(Boolean);
+  const installedIds = visibleInstalledAppIds();
   return `
     <section class="home-wallpaper">
       <div class="home-top">
@@ -1837,9 +1887,9 @@ function renderHome() {
       </div>
       ${renderNotificationWidget()}
       <nav class="desktop-grid" aria-label="已安装 App">
-        ${installedApps
-          .map((app) => {
-            const id = appIdByName(app.name);
+        ${installedIds
+          .map((id) => {
+            const app = apps[id];
             return `
               <button class="desktop-app ${tutorialTargetClass("open", id)}" data-open="${id}">
                 <span style="--app-color:${app.color}">${app.icon}</span>
@@ -1861,6 +1911,73 @@ function renderHome() {
 
 function appIdByName(name) {
   return Object.keys(apps).find((id) => apps[id].name === name) || "home";
+}
+
+function normalizeAppId(appId) {
+  return appAliases[appId] || appId;
+}
+
+function isAppInstalled(appId) {
+  const normalized = normalizeAppId(appId);
+  if (normalized === "home") return true;
+  if (apps[normalized]?.builtin) return true;
+  if (state.installed.includes(normalized)) return true;
+  if (normalized === "spend") return spendHubCategoryIds.some((id) => state.installed.includes(id));
+  return false;
+}
+
+function visibleInstalledAppIds() {
+  return homeAppIds.filter((id) => isAppInstalled(id));
+}
+
+function currentSpendShelf() {
+  const requestedShelf = state.spendHub?.shelf;
+  return spendHubShelves.find((shelf) => shelf.id === requestedShelf) || spendHubShelves[0];
+}
+
+function normalizeSpendHubState() {
+  const shelf = currentSpendShelf();
+  const requestedCategory = state.spendHub?.category;
+  const category = shelf.categories.includes(requestedCategory) ? requestedCategory : shelf.categories[0];
+  state.spendHub = { shelf: shelf.id, category };
+  return { shelf, category };
+}
+
+function buttonTextForSpendCategory(category) {
+  const labels = {
+    food: "下单",
+    shop: "购买",
+    travel: "预订",
+    cars: "支付",
+    property: "支付",
+    services: "缴费",
+    entertainment: "购买",
+    stocks: "买入",
+    ride: "叫车",
+    local: "预约",
+    health: "支付",
+    insurance: "投保",
+    credit: "用额度",
+    subscriptions: "开通",
+    secondhand: "支付",
+    gov: "办理",
+    education: "缴费",
+    beauty: "预约",
+    pets: "支付",
+    recharge: "充值",
+    social: "支付",
+    rental: "租用",
+    office: "支付",
+    renovation: "支付",
+    parenting: "支付",
+    tickets: "购票",
+    overseas: "支付",
+    legal: "办理",
+    jobs: "购买",
+    events: "预订",
+    security: "支付",
+  };
+  return labels[category] || "支付";
 }
 
 function renderNotificationWidget() {
@@ -1969,7 +2086,7 @@ function renderSmsApp() {
 }
 
 function renderStoreApp() {
-  const downloadable = Object.entries(apps).filter(([, app]) => !app.builtin);
+  const downloadable = storeDownloadAppIds.map((id) => [id, apps[id]]).filter(([, app]) => app);
   return `
     ${appHeader("应用商店", "所有新软件都从这里下载")}
     <section class="app-body store-list">
@@ -1977,7 +2094,7 @@ function renderStoreApp() {
       <h3>下载 App</h3>
       ${downloadable
         .map(([id, app]) => {
-          const installed = state.installed.includes(id);
+          const installed = isAppInstalled(id);
           return `
             <article class="store-item">
               <span class="store-icon" style="--app-color:${app.color}">${app.icon}</span>
@@ -3472,6 +3589,174 @@ function renderWalletApp() {
   `;
 }
 
+function categoryPriceRange(category) {
+  const prices = (spendCatalogs[category] || []).map((item) => Math.max(0, Math.floor(Number(item.price) || 0)));
+  if (!prices.length) return "暂无";
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return min === max ? money(min) : `${money(min)}-${money(max)}`;
+}
+
+function renderSpendHubPulse() {
+  const activeShipments = state.shipments.filter((shipment) => !shipment.signed).length;
+  const pulseCards = [
+    ["可支付", money(totalCardBalance()), state.checkoutMethod === "credit" ? "当前偏向信用" : "银行卡余额"],
+    ["已花掉", money(state.stats.moneySpent || 0), `${state.transactions.filter((item) => item.direction === "out").length} 笔扣款`],
+    ["在路上", String(activeShipments), "物流、电话、驿站会继续动"],
+    ["月月扣", money(monthlyCommitmentTotal()), "订阅、月供、分期"],
+  ];
+  return `
+    <section class="spend-pulse">
+      ${pulseCards
+        .map(
+          ([label, value, hint]) => `
+            <article>
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+              <small>${escapeHtml(hint)}</small>
+            </article>
+          `,
+        )
+        .join("")}
+    </section>
+  `;
+}
+
+function renderSpendShelves(activeShelfId) {
+  return `
+    <div class="spend-shelf-tabs" aria-label="花钱货架">
+      ${spendHubShelves
+        .map(
+          (shelf) => `
+            <button data-spend-shelf="${shelf.id}" aria-pressed="${activeShelfId === shelf.id ? "true" : "false"}">
+              <strong>${escapeHtml(shelf.title)}</strong>
+              <span>${escapeHtml(shelf.subtitle)}</span>
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderSpendChannels(shelf, activeCategory) {
+  return `
+    <div class="spend-channel-grid" aria-label="花钱频道">
+      ${shelf.categories
+        .map((category) => {
+          const app = apps[category];
+          const records = recordsForAny(category).length;
+          const itemCount = (spendCatalogs[category] || []).length;
+          return `
+            <button data-spend-channel="${category}" aria-pressed="${activeCategory === category ? "true" : "false"}" style="--channel-color:${app?.color || "#111827"}">
+              <i>${escapeHtml(app?.icon || "¥")}</i>
+              <strong>${escapeHtml(app?.name || category)}</strong>
+              <span>${itemCount} 项 · ${categoryPriceRange(category)}</span>
+              <small>${records ? `${records} 条记录` : "还没花过"}</small>
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderSpendSelectedHeader(category) {
+  const app = apps[category] || { name: "花钱", desc: "付款入口", color: "#111827", icon: "¥" };
+  const items = spendCatalogs[category] || [];
+  const cheapest = items.reduce((min, item) => Math.min(min, Math.max(0, Math.floor(Number(item.price) || 0))), Infinity);
+  const mostExpensive = items.reduce((max, item) => Math.max(max, Math.max(0, Math.floor(Number(item.price) || 0))), 0);
+  return `
+    <section class="spend-selected-head" style="--channel-color:${app.color}; --app-color:${app.color}">
+      <div class="store-icon">${escapeHtml(app.icon)}</div>
+      <div>
+        <span>当前付款频道</span>
+        <strong>${escapeHtml(app.name)}</strong>
+        <p>${escapeHtml(app.desc || "付款、订单和后续反馈。")}</p>
+      </div>
+      <b>${items.length ? `${money(cheapest)}起 / 最高${money(mostExpensive)}` : "暂无标价"}</b>
+    </section>
+  `;
+}
+
+function renderCreditSpendSurface() {
+  const enabled = state.credit.enabled;
+  const used = Math.floor(Number(state.credit.used) || 0);
+  const available = creditAvailable();
+  const minRepay = Math.min(used, Math.max(100, Math.ceil(used * 0.1)));
+  return `
+    <div class="credit-summary spend-inline-summary">
+      <span>${enabled ? "可用额度" : "信用账户未开通"}</span>
+      <strong>${enabled ? money(available) : money(state.credit.limit)}</strong>
+      <small>${enabled ? `已用 ${money(used)} / 总额度 ${money(state.credit.limit)}` : "需要手机号和银行卡。"}</small>
+    </div>
+    ${
+      enabled
+        ? `
+          <div class="credit-actions">
+            <button class="primary" data-credit-loan="1000">借 ¥1,000 到银行卡</button>
+            <button class="primary" data-credit-loan="5000">借 ¥5,000 到银行卡</button>
+            <button class="danger" data-credit-repay="${minRepay}" ${used ? "" : "disabled"}>还最低 ${money(minRepay)}</button>
+            <button data-credit-repay="${used}" ${used ? "" : "disabled"}>全额还款 ${money(used)}</button>
+          </div>
+        `
+        : `<button class="primary" data-credit-activate="true" ${hasActivePlan() && state.cards.length ? "" : "disabled"}>开通信用账户</button>`
+    }
+    <h3>额度消费</h3>
+    ${renderSpendList("credit", "用额度")}
+    <h3>分期记录</h3>
+    ${renderInstallments()}
+  `;
+}
+
+function renderSpendCategorySurface(category) {
+  if (category === "food") {
+    return `${renderFoodControlPanel()}<h3>可下单</h3>${renderFoodSpendList()}`;
+  }
+  if (category === "shop") {
+    return `${renderShopControlPanel()}<h3>今日推荐</h3>${renderShopSpendList()}`;
+  }
+  if (category === "travel") {
+    return `${renderTravelControlPanel()}<h3>可预订</h3>${renderTravelSpendList()}<h3>行程后续</h3>${renderTravelAfterSales()}`;
+  }
+  if (category === "cars") {
+    return `${renderCarControlPanel()}<h3>车辆服务</h3>${renderCarSpendList()}<h3>用车后续</h3>${renderCarAfterSales()}`;
+  }
+  if (category === "credit") return renderCreditSpendSurface();
+
+  const addOns = [];
+  if (category === "stocks") addOns.push(`<h3>持仓</h3>${renderAssetList(state.assets.holdings, "还没有任何持仓。")}`);
+  if (category === "property") addOns.push(`<h3>我的房产/租约</h3>${renderAssetList(state.assets.properties, "还没有房产或租约记录。")}<h3>房贷/月供</h3>${renderLoanList("property")}`);
+  if (category === "insurance") addOns.push(`<h3>我的保单</h3>${renderAssetList(state.assets.policies, "还没有保单。")}`);
+  if (category === "subscriptions") addOns.push(`<h3>我的订阅</h3>${renderSubscriptionList()}`);
+  if (category === "rental") addOns.push(`<h3>租赁押金/预授权</h3>${renderHoldList("rental")}`);
+  if (category === "renovation") addOns.push(`<h3>装修贷/月供</h3>${renderLoanList("renovation")}`);
+  if (category === "security") addOns.push(`<h3>安防押金/预授权</h3>${renderHoldList("security")}`);
+
+  return `
+    <h3>${escapeHtml(apps[category]?.name || "可花项目")}</h3>
+    ${renderSpendList(category, buttonTextForSpendCategory(category))}
+    ${addOns.join("")}
+  `;
+}
+
+function renderSpendHubApp() {
+  const { shelf, category } = normalizeSpendHubState();
+  return `
+    ${appHeader("花钱", "少点图标，多点扣款")}
+    <section class="app-body commerce-body spend-hub-body">
+      ${renderPaymentSummary()}
+      ${renderSpendHubPulse()}
+      ${renderSpendShelves(shelf.id)}
+      ${renderSpendChannels(shelf, category)}
+      ${renderSpendSelectedHeader(category)}
+      ${renderSpendCategorySurface(category)}
+      <h3>这个频道的回声</h3>
+      ${renderRecordList(recordsForAny(category), `还没有${apps[category]?.name || "这个频道"}消费记录。`)}
+    </section>
+  `;
+}
+
 function renderFoodControlPanel() {
   const draft = currentFoodDraft();
   const address = foodAddressBook.find((entry) => entry.id === draft.addressId) || foodAddressBook[0];
@@ -4935,12 +5220,13 @@ function cancelCashSwipe(event) {
 }
 
 function downloadApp(id) {
-  if (state.installed.includes(id)) return;
-  state.installed.push(id);
-  state.installedAt[id] = Date.now();
+  const appId = normalizeAppId(id);
+  if (isAppInstalled(appId)) return;
+  state.installed.push(appId);
+  state.installedAt[appId] = Date.now();
   state.stats.downloads += 1;
-  addNotice(`${apps[id].name}下载完成`);
-  advanceTutorial("download", id);
+  addNotice(`${apps[appId].name}下载完成`);
+  advanceTutorial("download", appId);
   render();
 }
 
@@ -6193,65 +6479,68 @@ function sendSms() {
 }
 
 el.screen.addEventListener("click", (event) => {
-  const open = event.target.closest("[data-open]");
+  const target = event.target?.closest ? event.target : event.target?.parentElement;
+  if (!target) return;
+
+  const open = target.closest("[data-open]");
   if (open) {
     if (!guardTutorialAction("open", open.dataset.open, event)) return;
     return setApp(open.dataset.open);
   }
 
-  if (event.target.closest("[data-home]")) {
+  if (target.closest("[data-home]")) {
     if (!guardTutorialAction("home", "", event)) return;
     return setApp("home");
   }
 
-  const appButton = event.target.closest("[data-app]");
+  const appButton = target.closest("[data-app]");
   if (appButton) {
     const action = appButton.dataset.app === "home" ? "home" : "open";
     if (!guardTutorialAction(action, appButton.dataset.app, event)) return;
     return setApp(appButton.dataset.app);
   }
 
-  if (event.target.closest("[data-close-checkout]")) {
+  if (target.closest("[data-close-checkout]")) {
     if (!guardTutorialAction("checkout", "", event)) return;
     return closeCheckout();
   }
 
-  if (event.target.closest("[data-confirm-checkout]")) {
+  if (target.closest("[data-confirm-checkout]")) {
     if (!guardTutorialAction("checkout", "", event)) return;
     return confirmCheckout();
   }
 
-  const download = event.target.closest("[data-download]");
+  const download = target.closest("[data-download]");
   if (download) {
     if (!guardTutorialAction("download", download.dataset.download, event)) return;
     return downloadApp(download.dataset.download);
   }
 
-  if (event.target.closest("[data-buy-number]")) {
+  if (target.closest("[data-buy-number]")) {
     if (!guardTutorialAction("buyNumber", "", event)) return;
     return buyNumber();
   }
-  const planButton = event.target.closest("[data-buy-plan]");
+  const planButton = target.closest("[data-buy-plan]");
   if (planButton) {
     if (!guardTutorialAction("buyPlan", planButton.dataset.buyPlan, event)) return;
     return buyPlan(planButton.dataset.buyPlan);
   }
-  if (event.target.closest("[data-recharge]")) {
+  if (target.closest("[data-recharge]")) {
     if (!guardTutorialAction("recharge", "", event)) return;
     return recharge();
   }
-  if (event.target.closest("[data-new-card]")) {
+  if (target.closest("[data-new-card]")) {
     if (!guardTutorialAction("newCard", "", event)) return;
     return newCard();
   }
 
-  const copy = event.target.closest("[data-copy-card]");
+  const copy = target.closest("[data-copy-card]");
   if (copy) {
     if (!guardTutorialAction("copyCard", "", event)) return;
     return copyCard(copy.dataset.copyCard);
   }
 
-  const defaultCard = event.target.closest("[data-default-card]");
+  const defaultCard = target.closest("[data-default-card]");
   if (defaultCard) {
     if (!guardTutorialAction("defaultCard", "", event)) return;
     state.defaultCardId = defaultCard.dataset.defaultCard;
@@ -6259,126 +6548,143 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
-  if (event.target.closest("[data-paste-card]")) {
+  if (target.closest("[data-paste-card]")) {
     if (!guardTutorialAction("pasteCard", "", event)) return;
     state.transferDraft.cardNumber = state.clipboard;
     advanceTutorial("pasteCard");
     return render();
   }
 
-  if (event.target.closest("[data-transfer-to-card]")) {
+  if (target.closest("[data-transfer-to-card]")) {
     if (!guardTutorialAction("transferToCard", "", event)) return;
     return transferToCard();
   }
 
-  if (event.target.closest("[data-credit-activate]")) {
+  if (target.closest("[data-credit-activate]")) {
     if (!guardTutorialAction("creditActivate", "", event)) return;
     return activateCredit();
   }
 
-  const creditLoan = event.target.closest("[data-credit-loan]");
+  const creditLoan = target.closest("[data-credit-loan]");
   if (creditLoan) {
     if (!guardTutorialAction("creditLoan", "", event)) return;
     return borrowCredit(creditLoan.dataset.creditLoan);
   }
 
-  const creditRepay = event.target.closest("[data-credit-repay]");
+  const creditRepay = target.closest("[data-credit-repay]");
   if (creditRepay) {
     if (!guardTutorialAction("creditRepay", "", event)) return;
     return repayCredit(creditRepay.dataset.creditRepay);
   }
 
-  const refundOrder = event.target.closest("[data-refund-order]");
+  const refundOrder = target.closest("[data-refund-order]");
   if (refundOrder) {
     if (!guardTutorialAction("refund", "", event)) return;
     return requestRefund(refundOrder.dataset.refundOrder);
   }
 
-  const refundBooking = event.target.closest("[data-refund-booking]");
+  const refundBooking = target.closest("[data-refund-booking]");
   if (refundBooking) {
     if (!guardTutorialAction("refundBooking", "", event)) return;
     return requestBookingRefund(refundBooking.dataset.refundBooking);
   }
 
-  const travelCheckIn = event.target.closest("[data-travel-checkin]");
+  const travelCheckIn = target.closest("[data-travel-checkin]");
   if (travelCheckIn) {
     if (!guardTutorialAction("travelCheckIn", "", event)) return;
     return confirmTravelCheckIn(travelCheckIn.dataset.travelCheckin);
   }
 
-  const shipmentSign = event.target.closest("[data-sign-shipment]");
+  const shipmentSign = target.closest("[data-sign-shipment]");
   if (shipmentSign) {
     if (!guardTutorialAction("signShipment", "", event)) return;
     return signShipment(shipmentSign.dataset.signShipment);
   }
 
-  const release = event.target.closest("[data-release-hold]");
+  const release = target.closest("[data-release-hold]");
   if (release) {
     if (!guardTutorialAction("releaseHold", "", event)) return;
     return releaseHold(release.dataset.releaseHold);
   }
 
-  const renew = event.target.closest("[data-renew-subscription]");
+  const renew = target.closest("[data-renew-subscription]");
   if (renew) {
     if (!guardTutorialAction("renewSubscription", "", event)) return;
     return renewSubscription(renew.dataset.renewSubscription);
   }
 
-  const cancelSubscriptionButton = event.target.closest("[data-cancel-subscription]");
+  const cancelSubscriptionButton = target.closest("[data-cancel-subscription]");
   if (cancelSubscriptionButton) {
     if (!guardTutorialAction("cancelSubscription", "", event)) return;
     return cancelSubscription(cancelSubscriptionButton.dataset.cancelSubscription);
   }
 
-  const installmentPayment = event.target.closest("[data-pay-installment]");
+  const installmentPayment = target.closest("[data-pay-installment]");
   if (installmentPayment) {
     if (!guardTutorialAction("payInstallment", "", event)) return;
     return payInstallment(installmentPayment.dataset.payInstallment);
   }
 
-  const loanPayment = event.target.closest("[data-pay-loan]");
+  const loanPayment = target.closest("[data-pay-loan]");
   if (loanPayment) {
     if (!guardTutorialAction("payLoan", "", event)) return;
     return payLoanInstallment(loanPayment.dataset.payLoan);
   }
 
-  if (event.target.closest("[data-pay-monthly]")) {
+  if (target.closest("[data-pay-monthly]")) {
     if (!guardTutorialAction("payMonthly", "", event)) return;
     return payMonthlyCommitments();
   }
 
-  const shopCheckoutCart = event.target.closest("[data-shop-checkout-cart]");
+  const spendShelf = target.closest("[data-spend-shelf]");
+  if (spendShelf) {
+    if (!guardTutorialAction("spendShelf", spendShelf.dataset.spendShelf, event)) return;
+    const shelf = spendHubShelves.find((item) => item.id === spendShelf.dataset.spendShelf) || spendHubShelves[0];
+    state.spendHub = { shelf: shelf.id, category: shelf.categories[0] };
+    return render();
+  }
+
+  const spendChannel = target.closest("[data-spend-channel]");
+  if (spendChannel) {
+    if (!guardTutorialAction("spendChannel", spendChannel.dataset.spendChannel, event)) return;
+    const shelf = currentSpendShelf();
+    const category = spendChannel.dataset.spendChannel;
+    state.spendHub = { shelf: shelf.id, category: shelf.categories.includes(category) ? category : shelf.categories[0] };
+    return render();
+  }
+
+  const shopCheckoutCart = target.closest("[data-shop-checkout-cart]");
   if (shopCheckoutCart) {
     if (!guardTutorialAction("shopCartCheckout", "", event)) return;
     return openCheckout("shop", SHOP_CART_ID);
   }
 
-  const shopAddCart = event.target.closest("[data-shop-add-cart]");
+  const shopAddCart = target.closest("[data-shop-add-cart]");
   if (shopAddCart) {
     if (!guardTutorialAction("shopAddCart", "", event)) return;
     return addShopCartItem(shopAddCart.dataset.shopAddCart);
   }
 
-  const shopCartQty = event.target.closest("[data-shop-cart-qty]");
+  const shopCartQty = target.closest("[data-shop-cart-qty]");
   if (shopCartQty) {
     if (!guardTutorialAction("shopCartQty", "", event)) return;
     return updateShopCartQuantity(shopCartQty.dataset.shopCartQty, Math.floor(Number(shopCartQty.dataset.shopCartDelta) || 0));
   }
 
-  const shopCartRemove = event.target.closest("[data-shop-cart-remove]");
+  const shopCartRemove = target.closest("[data-shop-cart-remove]");
   if (shopCartRemove) {
     if (!guardTutorialAction("shopCartRemove", "", event)) return;
     return removeShopCartItem(shopCartRemove.dataset.shopCartRemove);
   }
 
-  const shopOption = event.target.closest("[data-shop-option]");
+  const shopOption = target.closest("[data-shop-option]");
   if (shopOption) {
     if (!guardTutorialAction("shopOption", "", event)) return;
     updateShopDraft({ [shopOption.dataset.shopOption]: shopOption.dataset.shopValue || "" });
     return render();
   }
 
-  const shopToggle = event.target.closest("[data-shop-toggle]");
+  const shopToggle = target.closest("[data-shop-toggle]");
   if (shopToggle) {
     if (!guardTutorialAction("shopToggle", "", event)) return;
     const key = shopToggle.dataset.shopToggle;
@@ -6386,7 +6692,7 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
-  const foodOption = event.target.closest("[data-food-option]");
+  const foodOption = target.closest("[data-food-option]");
   if (foodOption) {
     if (!guardTutorialAction("foodOption", "", event)) return;
     const key = foodOption.dataset.foodOption;
@@ -6396,7 +6702,7 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
-  const foodToggle = event.target.closest("[data-food-toggle]");
+  const foodToggle = target.closest("[data-food-toggle]");
   if (foodToggle) {
     if (!guardTutorialAction("foodToggle", "", event)) return;
     const key = foodToggle.dataset.foodToggle;
@@ -6404,14 +6710,14 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
-  const travelOption = event.target.closest("[data-travel-option]");
+  const travelOption = target.closest("[data-travel-option]");
   if (travelOption) {
     if (!guardTutorialAction("travelOption", "", event)) return;
     updateTravelDraft({ [travelOption.dataset.travelOption]: travelOption.dataset.travelValue || "" });
     return render();
   }
 
-  const travelToggle = event.target.closest("[data-travel-toggle]");
+  const travelToggle = target.closest("[data-travel-toggle]");
   if (travelToggle) {
     if (!guardTutorialAction("travelToggle", "", event)) return;
     const key = travelToggle.dataset.travelToggle;
@@ -6419,14 +6725,14 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
-  const carOption = event.target.closest("[data-car-option]");
+  const carOption = target.closest("[data-car-option]");
   if (carOption) {
     if (!guardTutorialAction("carOption", "", event)) return;
     updateCarDraft({ [carOption.dataset.carOption]: carOption.dataset.carValue || "" });
     return render();
   }
 
-  const carToggle = event.target.closest("[data-car-toggle]");
+  const carToggle = target.closest("[data-car-toggle]");
   if (carToggle) {
     if (!guardTutorialAction("carToggle", "", event)) return;
     const key = carToggle.dataset.carToggle;
@@ -6434,13 +6740,13 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
-  const carAction = event.target.closest("[data-car-action]");
+  const carAction = target.closest("[data-car-action]");
   if (carAction) {
     if (!guardTutorialAction("carAction", "", event)) return;
     return handleCarRecordAction(carAction.dataset.carRecord, carAction.dataset.carAction);
   }
 
-  const paymentMethod = event.target.closest("[data-payment-method]");
+  const paymentMethod = target.closest("[data-payment-method]");
   if (paymentMethod) {
     if (!guardTutorialAction("paymentMethod", paymentMethod.dataset.paymentMethod, event)) return;
     const method = paymentMethod.dataset.paymentMethod === "credit" ? "credit" : "card";
@@ -6453,47 +6759,47 @@ el.screen.addEventListener("click", (event) => {
     return render();
   }
 
-  const spendFilter = event.target.closest("[data-spend-filter-category]");
+  const spendFilter = target.closest("[data-spend-filter-category]");
   if (spendFilter) {
     if (!guardTutorialAction("spendFilter", spendFilter.dataset.spendFilterCategory, event)) return;
     state.spendFilters[spendFilter.dataset.spendFilterCategory] = spendFilter.dataset.spendFilterTag || "全部";
     return render();
   }
 
-  const spendButton = event.target.closest("[data-spend-category]");
+  const spendButton = target.closest("[data-spend-category]");
   if (spendButton) {
     if (!guardTutorialAction("spend", spendButton.dataset.spendCategory, event)) return;
     return openCheckout(spendButton.dataset.spendCategory, spendButton.dataset.spendId);
   }
 
-  const quickTransfer = event.target.closest("[data-quick-transfer]");
+  const quickTransfer = target.closest("[data-quick-transfer]");
   if (quickTransfer) {
     if (!guardTutorialAction("transferPerson", "", event)) return;
     return transferToPerson(quickTransfer.dataset.quickTransfer, quickTransfer.dataset.quickAmount, "快捷转账");
   }
 
-  if (event.target.closest("[data-transfer-person]")) {
+  if (target.closest("[data-transfer-person]")) {
     if (!guardTutorialAction("transferPerson", "", event)) return;
     updatePersonTransferDraft();
     return transferToPerson(state.personTransferDraft.contactId, state.personTransferDraft.amount, state.personTransferDraft.note);
   }
 
-  const dial = event.target.closest("[data-dial]");
+  const dial = target.closest("[data-dial]");
   if (dial) {
     if (!guardTutorialAction("dial", dial.dataset.dial, event)) return;
     state.dialNumber = `${state.dialNumber}${dial.dataset.dial}`.slice(0, 18);
     return render();
   }
-  if (event.target.closest("[data-clear-dial]")) {
+  if (target.closest("[data-clear-dial]")) {
     if (!guardTutorialAction("clearDial", "", event)) return;
     state.dialNumber = "";
     return render();
   }
-  if (event.target.closest("[data-call]")) {
+  if (target.closest("[data-call]")) {
     if (!guardTutorialAction("call", "", event)) return;
     return makeCall();
   }
-  if (event.target.closest("[data-send-sms]")) {
+  if (target.closest("[data-send-sms]")) {
     if (!guardTutorialAction("sendSms", "", event)) return;
     return sendSms();
   }
