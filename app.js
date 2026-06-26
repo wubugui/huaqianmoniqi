@@ -217,6 +217,37 @@ const carWorkshopTags = new Set(["保养", "维修", "洗车", "年检", "救援
 const carPolicyTags = new Set(["保险", "续保"]);
 const carPlateTags = new Set(["车牌", "证件"]);
 
+const propertyProfiles = [
+  { id: "lease", label: "整租房", address: "上海市浦东新区 MoneyOS 小区 8 号楼 1801", owner: "房东王女士", area: "72㎡ 两室一厅", cert: "沪租备 310115-MO888", note: "押一付三，合同到期前 30 天提醒续租" },
+  { id: "newhome", label: "新房", address: "MoneyBay 新城 3 幢 1202", owner: "MoneyOS 置业", area: "89㎡ 三房", cert: "预售证 MO-2026-018", note: "认筹、首付、网签、维修基金和契税分节点缴" },
+  { id: "secondhand", label: "二手房", address: "静安 MoneyLane 16 号 602", owner: "卖家李先生", area: "96㎡ 改善房", cert: "不动产证 沪(2026)MO字第0088号", note: "资金监管、评估、按揭和过户税费需要逐项确认" },
+  { id: "parking", label: "产权车位", address: "MoneyOS 小区 B2-118 车位", owner: "物业服务中心", area: "13㎡ 地下车位", cert: "车位权属备案 CV-MO-118", note: "定金、尾款、权属登记和门禁备案分开收费" },
+];
+
+const propertyBillingCycles = [
+  { id: "monthly", label: "本月账期", multiplier: 1, desc: "当期租金、物业或月供，扣完立刻有回执" },
+  { id: "quarterly", label: "季度预付", multiplier: 3, desc: "一次付三个月，金额更重但账期更安静", discountRate: 0.012 },
+  { id: "handover", label: "交割节点", multiplier: 1, desc: "网签、交房、过户或退租节点一次性结清", feeRate: 0.018 },
+];
+
+const propertyServicePackages = [
+  { id: "self", label: "自助办理", fee: 0, feeRate: 0, desc: "只走平台基础流程，省钱但自己盯进度" },
+  { id: "agent", label: "经纪跟办", fee: 180, feeRate: 0.006, desc: "带看、材料、签约和催回执都有人跟" },
+  { id: "legal", label: "合同托管", fee: 380, feeRate: 0.011, desc: "合同审查、资金监管、税费和权证节点提醒" },
+];
+
+const propertyCoupons = [
+  { id: "rent-100", label: "租住满2000减100", discount: 100, min: 2000, tags: ["租房", "续租", "中介"] },
+  { id: "service-300", label: "服务费满3000减300", discount: 300, min: 3000, tags: ["中介", "装修", "物业", "维修", "车位"] },
+  { id: "tax-800", label: "交易缴费减800", discount: 800, min: 50000, tags: ["买房", "认筹", "税费", "维修基金", "登记", "评估"] },
+  { id: "none", label: "不使用", discount: 0, min: 0 },
+];
+
+const propertyLeaseTags = new Set(["租房", "中介", "定金", "续租", "退租", "滞纳金"]);
+const propertyPurchaseTags = new Set(["买房", "认筹", "维修基金", "税费", "登记", "评估"]);
+const propertyServiceTags = new Set(["装修", "物业", "维修", "搬家", "保障", "车位"]);
+const propertyCycleTags = new Set(["租房", "续租", "房贷", "物业"]);
+
 const travelBaggageTags = new Set(["机票", "度假"]);
 const travelStayTags = new Set(["酒店", "度假", "预授权"]);
 const travelTrafficTags = new Set(["火车票", "机票", "改签", "行李", "权益"]);
@@ -346,8 +377,17 @@ const spendCatalogs = {
     { id: "viewing-hold", name: "购房认筹金", price: 50000, tag: "认筹", desc: "锁定选房资格，摇号失败才可能退。", status: "认筹金已冻结", hold: true },
     { id: "rent-hold", name: "看房锁房定金", price: 1000, tag: "定金", desc: "租房前锁定房源，违约可能扣一半。", status: "锁房定金已冻结", hold: true, refundRate: 0.5 },
     { id: "property-repair-fund", name: "公共维修资金", price: 8600, tag: "维修基金", desc: "购房配套缴费，按面积和当地规则计算。", status: "维修资金已缴" },
+    { id: "deed-tax", name: "契税托管预缴", price: 16800, tag: "税费", desc: "契税、印花税、登记资料和资金监管回执。", status: "契税资料已提交" },
+    { id: "ownership-register", name: "不动产登记工本", price: 180, tag: "登记", desc: "产证登记、权属证书、查档和邮寄到家。", status: "登记申请已提交" },
+    { id: "home-evaluation", name: "房屋评估费", price: 1280, tag: "评估", desc: "按揭前评估、楼盘核验、照片采集和报告费。", status: "评估报告生成中" },
+    { id: "rent-renewal", name: "租约续签服务费", price: 680, tag: "续租", desc: "电子合同续签、租金调整确认和备案提醒。", status: "续租协议已生成", asset: "property" },
+    { id: "late-rent-fee", name: "房租逾期滞纳金", price: 120, tag: "滞纳金", desc: "逾期付款违约金、催缴短信和账期恢复。", status: "滞纳金已缴" },
+    { id: "checkout-deduction", name: "退租清洁维修扣款", price: 860, tag: "退租", desc: "退租验房后确认清洁、墙面、门锁和家具扣款。", status: "退租扣款已确认" },
+    { id: "handover-property-prepay", name: "交房物业预存", price: 3600, tag: "物业", desc: "交房时预存物业费、公共能耗和装修垃圾清运。", status: "交房缴费已确认" },
+    { id: "home-repair-order", name: "房屋报修工单", price: 380, tag: "维修", desc: "水管、门锁、漏水上门检修和材料预付。", status: "维修师傅已派单" },
     { id: "moving-elevator", name: "搬家电梯占用费", price: 300, tag: "搬家", desc: "物业临时占梯、保护垫和押金管理费。", status: "占梯申请已提交" },
     { id: "home-policy", name: "房屋居住保障", price: 468, tag: "保障", desc: "租客责任、漏水、门锁和紧急维修保障。", status: "居住保障已生效" },
+    { id: "parking-final", name: "产权车位尾款", price: 88000, tag: "车位", desc: "车位合同尾款、权属登记、门禁备案和物业录入。", status: "车位尾款已支付", asset: "property" },
   ],
   services: [
     { id: "electricity", name: "电费缴纳", price: 186, tag: "生活", desc: "家庭用电账单，缴后立即销账。", status: "电费已缴" },
@@ -672,6 +712,17 @@ const defaultState = {
     autoRenewInsurance: true,
     remark: "",
   },
+  propertyDraft: {
+    propertyId: "lease",
+    billingCycle: "monthly",
+    servicePackage: "agent",
+    couponId: "rent-100",
+    electronicContract: true,
+    invoice: true,
+    repairEscrow: true,
+    autoPayReminder: true,
+    remark: "",
+  },
   shopCart: [],
   billRuns: [],
   profile: {
@@ -865,6 +916,7 @@ function loadState() {
       shopDraft: { ...defaultState.shopDraft, ...(parsed.shopDraft || {}) },
       travelDraft: { ...defaultState.travelDraft, ...(parsed.travelDraft || {}) },
       carDraft: { ...defaultState.carDraft, ...(parsed.carDraft || {}) },
+      propertyDraft: { ...defaultState.propertyDraft, ...(parsed.propertyDraft || {}) },
       shopCart: Array.isArray(parsed.shopCart) ? parsed.shopCart.slice(0, 24) : [],
       profile: { ...defaultState.profile, ...(parsed.profile || {}) },
       smsDraft: { ...defaultState.smsDraft, ...parsed.smsDraft },
@@ -989,6 +1041,10 @@ function categoryProfileLine(category, item = {}) {
     const passenger = item.travelBreakdown.passenger;
     return `出行人：${passenger.name} · ${passenger.cert} · ${passenger.phone}`;
   }
+  if (category === "property" && item.propertyBreakdown?.profile) {
+    const profile = item.propertyBreakdown.profile;
+    return `房源资料：${profile.address} · ${profile.owner} · ${profile.cert}`;
+  }
   if (["shop", "food", "logistics", "recharge", "secondhand", "parenting", "pets"].includes(category)) return `收货地址：${profile.address}`;
   if (["travel", "tickets", "overseas", "health", "insurance", "education", "gov", "legal", "jobs"].includes(category)) return `实名信息：${profile.passenger}`;
   if (category === "cars" || category === "ride") return `车主/车牌：${profile.licensePlate}`;
@@ -1052,6 +1108,18 @@ function makePaymentMeta(category, item, payment) {
       protection: `${config.checkout} ${car.promise}${car.bindPlate ? " 已校验车牌/行驶证。" : " 未绑定电子行驶证。"}${car.autoRenewInsurance ? " 已开启续保提醒。" : ""}${car.remark ? ` 备注：${car.remark}` : ""}`,
     };
   }
+  if (category === "property" && item.propertyBreakdown) {
+    const property = item.propertyBreakdown;
+    return {
+      orderNo: newOrderNumber(category),
+      merchant: property.merchant,
+      channel: "MoneyOS 房产",
+      serviceFee: property.serviceFee + property.escrowFee + property.registrationFee + property.handoverFee,
+      invoice: property.invoice ? currentProfile().invoiceTitle : "未申请发票/收据",
+      fulfillment: `${property.profile.label} · ${property.profile.address} · ${property.fulfillmentLabel}`,
+      protection: `${config.checkout} ${property.promise}${property.electronicContract ? " 已生成电子合同/签章。" : " 未启用电子合同。"}${property.autoPayReminder ? " 已开启账期提醒。" : ""}${property.remark ? ` 备注：${property.remark}` : ""}`,
+    };
+  }
   const fulfillment = item.loan
     ? `${item.loan.lender || "贷款机构"}月供：${item.loan.months} 期，每期 ${money(item.loan.monthly)}`
     : item.hold
@@ -1085,6 +1153,10 @@ function checkoutLineFor(category, item) {
   if (category === "cars" && item.carBreakdown) {
     lines.push(`实付含${item.carBreakdown.summary}`);
     lines.push(item.carBreakdown.promise);
+  }
+  if (category === "property" && item.propertyBreakdown) {
+    lines.push(`实付含${item.propertyBreakdown.summary}`);
+    lines.push(item.propertyBreakdown.promise);
   }
   if (item.hold) lines.push(`押金/预授权，可退约 ${money(Math.floor(item.price * (item.refundRate || 1)))}`);
   if (item.loan) lines.push(`首付后生成 ${item.loan.months} 期月供，每期 ${money(item.loan.monthly)}`);
@@ -2857,6 +2929,219 @@ function carOrderBreakdown(item) {
   };
 }
 
+function currentPropertyDraft() {
+  const draft = { ...defaultState.propertyDraft, ...(state.propertyDraft || {}) };
+  if (!propertyProfiles.some((item) => item.id === draft.propertyId)) draft.propertyId = defaultState.propertyDraft.propertyId;
+  if (!propertyBillingCycles.some((item) => item.id === draft.billingCycle)) draft.billingCycle = defaultState.propertyDraft.billingCycle;
+  if (!propertyServicePackages.some((item) => item.id === draft.servicePackage)) draft.servicePackage = defaultState.propertyDraft.servicePackage;
+  if (!propertyCoupons.some((item) => item.id === draft.couponId)) draft.couponId = defaultState.propertyDraft.couponId;
+  draft.electronicContract = draft.electronicContract !== false;
+  draft.invoice = draft.invoice !== false;
+  draft.repairEscrow = draft.repairEscrow !== false;
+  draft.autoPayReminder = draft.autoPayReminder !== false;
+  draft.remark = String(draft.remark || "").trim().slice(0, 70);
+  return draft;
+}
+
+function updatePropertyDraft(patch) {
+  state.propertyDraft = { ...currentPropertyDraft(), ...patch };
+}
+
+function propertyProfileFor(item, draft) {
+  if (item.tag === "车位") return propertyProfiles.find((entry) => entry.id === "parking") || propertyProfiles[0];
+  if (propertyPurchaseTags.has(item.tag) || item.loan) {
+    const selected = propertyProfiles.find((entry) => entry.id === draft.propertyId);
+    return selected && selected.id !== "lease" ? selected : propertyProfiles.find((entry) => entry.id === "newhome") || propertyProfiles[0];
+  }
+  return propertyProfiles.find((entry) => entry.id === draft.propertyId) || propertyProfiles[0];
+}
+
+function propertyMerchantFor(item, servicePackage) {
+  if (propertyPurchaseTags.has(item.tag) || item.loan) return servicePackage.id === "self" ? "MoneyOS 房产交易中心" : "MoneyOS 交易经纪服务";
+  if (propertyLeaseTags.has(item.tag)) return servicePackage.id === "self" ? "MoneyOS 在线租住" : "MoneyOS 租房经纪服务";
+  if (item.tag === "车位") return "MoneyOS 车位交易中心";
+  if (item.tag === "物业" || item.tag === "搬家" || item.tag === "维修") return "MoneyOS 物业服务中心";
+  if (item.tag === "装修") return "MoneyOS 装修交付";
+  if (item.tag === "保障") return "MoneyOS 居住保障";
+  return "MoneyOS 房产";
+}
+
+function propertyFulfillmentLabel(item, cycle) {
+  if (item.hold && item.tag === "定金") return "锁房保留 + 电子收据";
+  if (item.hold && item.tag === "认筹") return "认筹资格冻结 + 摇号提醒";
+  if (item.loan || item.tag === "买房") return "资金监管 + 网签材料";
+  if (item.tag === "税费") return "税费托管 + 完税回执";
+  if (item.tag === "维修基金") return "专项维修资金票据";
+  if (item.tag === "登记") return "权证登记 + 证书邮寄";
+  if (item.tag === "评估") return "评估预约 + 报告归档";
+  if (item.tag === "租房" || item.tag === "续租") return `${cycle.label} + 电子租约`;
+  if (item.tag === "房贷") return "房贷扣款回执 + 还款计划";
+  if (item.tag === "退租") return "退租验房 + 押金清算";
+  if (item.tag === "物业") return "交房缴费 + 物业账户入账";
+  if (item.tag === "维修") return "报修派单 + 材料预付";
+  if (item.tag === "搬家") return "占梯申请 + 物业备案";
+  if (item.tag === "保障") return "保障生效 + 报修理赔入口";
+  if (item.tag === "车位") return "车位合同 + 门禁备案";
+  return "房产服务履约";
+}
+
+function propertyServiceFeeFor(item, base, servicePackage) {
+  if (item.hold || servicePackage.id === "self") return 0;
+  if (propertyPurchaseTags.has(item.tag) || item.loan) {
+    const raw = Math.floor(base * servicePackage.feeRate);
+    return Math.min(servicePackage.id === "legal" ? 9000 : 5000, Math.max(servicePackage.id === "legal" ? 680 : 280, raw));
+  }
+  if (propertyLeaseTags.has(item.tag)) {
+    const raw = Math.floor(base * (servicePackage.id === "legal" ? 0.035 : 0.018));
+    return Math.min(2600, Math.max(servicePackage.fee, raw));
+  }
+  if (propertyServiceTags.has(item.tag)) {
+    return Math.min(1600, Math.max(60, Math.floor(base * (servicePackage.id === "legal" ? 0.026 : 0.014))));
+  }
+  return servicePackage.fee;
+}
+
+function propertyRefundRateFor(item) {
+  if (item.hold) return Math.max(0.1, Math.min(1, Number(item.refundRate) || 1));
+  if (item.loan || item.tag === "买房") return 0.18;
+  if (item.tag === "认筹") return 0.82;
+  if (["税费", "维修基金", "登记"].includes(item.tag)) return 0.08;
+  if (item.tag === "评估") return 0.35;
+  if (item.tag === "租房") return item.asset === "property" ? 0.62 : 0.78;
+  if (item.tag === "续租") return 0.58;
+  if (item.tag === "中介") return 0.22;
+  if (item.tag === "滞纳金") return 0.02;
+  if (item.tag === "退租") return 0.05;
+  if (item.tag === "维修") return 0.48;
+  if (item.tag === "物业") return 0.5;
+  if (item.tag === "搬家") return 0.45;
+  if (item.tag === "保障") return 0.68;
+  if (item.tag === "车位") return item.asset === "property" ? 0.28 : 0.55;
+  return 0.64;
+}
+
+function propertyPromiseFor(item, breakdown) {
+  if (item.hold) return `押金/认筹按协议释放，预计可退 ${money(Math.floor(item.price * (item.refundRate || 1)))}`;
+  if (item.loan) return `首付后生成房贷月供，每期 ${money(item.loan.monthly)}，共 ${item.loan.months} 期`;
+  if (item.tag === "买房") return "网签、资金监管和按揭节点都会继续推送，撤单会扣大量费用";
+  if (["税费", "维修基金", "登记"].includes(item.tag)) return "缴费后进入办证材料，通常不可撤回";
+  if (item.tag === "租房" || item.tag === "续租") return `${breakdown.cycle.label}写入租约，退租按验房和合同扣费`;
+  if (item.tag === "退租") return "退租扣款确认后会从押金清算单里留下痕迹";
+  if (item.tag === "维修") return "师傅上门后按材料和工时补差价，取消会扣上门费";
+  if (item.tag === "保障") return "保障期内可发起漏水、门锁和责任理赔";
+  if (item.tag === "车位") return "车位交易会同步门禁，尾款和登记费按节点继续扣";
+  return `未履约前预计可退 ${Math.round(breakdown.refundRate * 100)}%，平台服务费另算`;
+}
+
+function propertyOrderBreakdown(item) {
+  const draft = currentPropertyDraft();
+  const profile = propertyProfileFor(item, draft);
+  const cycle = propertyBillingCycles.find((entry) => entry.id === draft.billingCycle) || propertyBillingCycles[0];
+  const servicePackage = propertyServicePackages.find((entry) => entry.id === draft.servicePackage) || propertyServicePackages[0];
+  const coupon = propertyCoupons.find((entry) => entry.id === draft.couponId) || propertyCoupons[0];
+  const base = Math.max(1, Math.floor(Number(item.price) || 0));
+  const cycleEligible = propertyCycleTags.has(item.tag) && item.id === "rent";
+  const cycleExtra = cycleEligible ? Math.max(0, Math.floor(base * (cycle.multiplier - 1))) : 0;
+  const cycleDiscount = cycleEligible && cycle.discountRate ? Math.floor((base + cycleExtra) * cycle.discountRate) : 0;
+  const electronicContractFee = draft.electronicContract && (propertyLeaseTags.has(item.tag) || propertyPurchaseTags.has(item.tag) || item.tag === "车位")
+    ? propertyPurchaseTags.has(item.tag) || item.loan || item.tag === "车位"
+      ? 120
+      : 35
+    : 0;
+  const serviceFee = propertyServiceFeeFor(item, base + cycleExtra, servicePackage);
+  const escrowFee = draft.repairEscrow && (propertyPurchaseTags.has(item.tag) || item.loan || item.tag === "车位")
+    ? Math.min(2200, Math.max(80, Math.floor((base + cycleExtra) * 0.003)))
+    : 0;
+  const repairPriorityFee = draft.repairEscrow && ["维修", "搬家", "物业", "装修", "保障"].includes(item.tag)
+    ? item.tag === "维修"
+      ? 60
+      : 35
+    : 0;
+  const registrationFee = item.tag === "买房"
+    ? 580
+    : item.tag === "车位"
+      ? 260
+      : item.tag === "登记"
+        ? 80
+        : 0;
+  const taxEstimateFee = item.tag === "买房"
+    ? Math.floor(base * 0.012)
+    : item.tag === "车位"
+      ? Math.floor(base * 0.01)
+      : 0;
+  const invoiceFee = draft.invoice && ["租房", "中介", "装修", "物业", "维修", "搬家", "车位"].includes(item.tag) ? 6 : 0;
+  const reminderFee = draft.autoPayReminder && (propertyLeaseTags.has(item.tag) || ["房贷", "物业", "车位"].includes(item.tag)) ? 3 : 0;
+  const handoverFee = cycle.id === "handover" && !item.hold ? Math.floor((base + cycleExtra) * (cycle.feeRate || 0)) : 0;
+  const subtotal = base + cycleExtra + electronicContractFee + serviceFee + escrowFee + repairPriorityFee + registrationFee + taxEstimateFee + invoiceFee + reminderFee + handoverFee - cycleDiscount;
+  const couponAllowed = !item.hold && subtotal >= Math.max(0, coupon.min || 0) && (!coupon.tags || coupon.tags.includes(item.tag));
+  const discount = couponAllowed ? Math.min(coupon.discount, Math.max(0, subtotal - 1)) : 0;
+  const total = Math.max(1, subtotal - discount);
+  const refundRate = propertyRefundRateFor(item);
+  const refundFee = Math.max(0, total - Math.floor(total * refundRate));
+  const lines = [
+    ["基础金额", base],
+    ["账期预付", cycleExtra],
+    ["电子合同/签章", electronicContractFee],
+    ["经纪/合同服务", serviceFee],
+    ["资金/维修托管", escrowFee],
+    ["维修加急", repairPriorityFee],
+    ["登记/网签工本", registrationFee],
+    ["税费预估", taxEstimateFee],
+    ["发票/收据服务", invoiceFee],
+    ["账期提醒", reminderFee],
+    ["交割节点费", handoverFee],
+    ["季度预付优惠", -cycleDiscount],
+    ["房产优惠券", -discount],
+  ].filter(([, amount]) => amount);
+  const summaryParts = [
+    cycleExtra ? `预付 ${money(cycleExtra)}` : "",
+    electronicContractFee ? `合同 ${money(electronicContractFee)}` : "",
+    serviceFee ? `服务 ${money(serviceFee)}` : "",
+    escrowFee ? `托管 ${money(escrowFee)}` : "",
+    repairPriorityFee ? `加急 ${money(repairPriorityFee)}` : "",
+    registrationFee ? `登记 ${money(registrationFee)}` : "",
+    taxEstimateFee ? `税费 ${money(taxEstimateFee)}` : "",
+    invoiceFee ? `票据 ${money(invoiceFee)}` : "",
+    reminderFee ? `提醒 ${money(reminderFee)}` : "",
+    handoverFee ? `交割 ${money(handoverFee)}` : "",
+    cycleDiscount ? `预付优惠 -${money(cycleDiscount)}` : "",
+    discount ? `券 -${money(discount)}` : "",
+  ].filter(Boolean);
+  const breakdown = {
+    profile,
+    cycle,
+    servicePackage,
+    merchant: propertyMerchantFor(item, servicePackage),
+    fulfillmentLabel: propertyFulfillmentLabel(item, cycle),
+    base,
+    cycleExtra,
+    electronicContractFee,
+    serviceFee,
+    escrowFee,
+    repairPriorityFee,
+    registrationFee,
+    taxEstimateFee,
+    invoiceFee,
+    reminderFee,
+    handoverFee,
+    cycleDiscount,
+    discount,
+    total,
+    lines,
+    summary: summaryParts.length ? summaryParts.join("、") : "无额外费用",
+    couponLabel: discount ? coupon.label : "未用房产券",
+    electronicContract: Boolean(electronicContractFee),
+    invoice: draft.invoice,
+    repairEscrow: draft.repairEscrow,
+    autoPayReminder: draft.autoPayReminder,
+    remark: draft.remark,
+    refundRate,
+    refundFee,
+  };
+  breakdown.promise = propertyPromiseFor(item, breakdown);
+  return breakdown;
+}
+
 function catalogItemForCheckout(category, item) {
   if (category === "food") {
     const foodBreakdown = foodOrderBreakdown(item);
@@ -2896,11 +3181,21 @@ function catalogItemForCheckout(category, item) {
       refundRate: carBreakdown.refundRate,
     };
   }
+  if (category === "property") {
+    const propertyBreakdown = propertyOrderBreakdown(item);
+    return {
+      ...item,
+      price: propertyBreakdown.total,
+      desc: `${item.desc} 实付包含${propertyBreakdown.summary}。`,
+      propertyBreakdown,
+      refundRate: propertyBreakdown.refundRate,
+    };
+  }
   return item;
 }
 
 function renderCheckoutBreakdown(item) {
-  const breakdown = item.foodBreakdown || item.shopBreakdown || item.travelBreakdown || item.carBreakdown;
+  const breakdown = item.foodBreakdown || item.shopBreakdown || item.travelBreakdown || item.carBreakdown || item.propertyBreakdown;
   if (!breakdown?.lines?.length) return "";
   return `
     <div class="checkout-breakdown">
@@ -3722,11 +4017,13 @@ function renderSpendCategorySurface(category) {
   if (category === "cars") {
     return `${renderCarControlPanel()}<h3>车辆服务</h3>${renderCarSpendList()}<h3>用车后续</h3>${renderCarAfterSales()}`;
   }
+  if (category === "property") {
+    return `${renderPropertyControlPanel()}<h3>房产支出</h3>${renderPropertySpendList()}<h3>合同/交割后续</h3>${renderPropertyAfterSales()}<h3>押金/认筹</h3>${renderHoldList("property")}<h3>我的房产/租约</h3>${renderAssetList(state.assets.properties, "还没有房产或租约记录。")}<h3>房贷/月供</h3>${renderLoanList("property")}`;
+  }
   if (category === "credit") return renderCreditSpendSurface();
 
   const addOns = [];
   if (category === "stocks") addOns.push(`<h3>持仓</h3>${renderAssetList(state.assets.holdings, "还没有任何持仓。")}`);
-  if (category === "property") addOns.push(`<h3>我的房产/租约</h3>${renderAssetList(state.assets.properties, "还没有房产或租约记录。")}<h3>房贷/月供</h3>${renderLoanList("property")}`);
   if (category === "insurance") addOns.push(`<h3>我的保单</h3>${renderAssetList(state.assets.policies, "还没有保单。")}`);
   if (category === "subscriptions") addOns.push(`<h3>我的订阅</h3>${renderSubscriptionList()}`);
   if (category === "rental") addOns.push(`<h3>租赁押金/预授权</h3>${renderHoldList("rental")}`);
@@ -4425,17 +4722,178 @@ function renderCarsApp() {
   `;
 }
 
+function renderPropertyControlPanel() {
+  const draft = currentPropertyDraft();
+  const profile = propertyProfiles.find((entry) => entry.id === draft.propertyId) || propertyProfiles[0];
+  return `
+    <section class="food-panel property-panel">
+      <div class="food-address property-address">
+        <span>当前房源/合同</span>
+        <strong>${escapeHtml(profile.label)} · ${escapeHtml(profile.area)}</strong>
+        <p>${escapeHtml(profile.address)} · ${escapeHtml(profile.owner)} · ${escapeHtml(profile.cert)}</p>
+      </div>
+      <div class="food-segment" aria-label="房源档案">
+        ${propertyProfiles
+          .map(
+            (item) => `
+              <button data-property-option="propertyId" data-property-value="${item.id}" aria-pressed="${draft.propertyId === item.id ? "true" : "false"}">
+                ${escapeHtml(item.label)}
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+      <div class="food-section">
+        <span>账期/节点</span>
+        <div class="food-option-grid">
+          ${propertyBillingCycles
+            .map(
+              (item) => `
+                <button data-property-option="billingCycle" data-property-value="${item.id}" aria-pressed="${draft.billingCycle === item.id ? "true" : "false"}">
+                  <strong>${escapeHtml(item.label)}</strong>
+                  <small>${escapeHtml(item.desc)}</small>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>服务</span>
+        <div class="food-option-grid">
+          ${propertyServicePackages
+            .map(
+              (item) => `
+                <button data-property-option="servicePackage" data-property-value="${item.id}" aria-pressed="${draft.servicePackage === item.id ? "true" : "false"}">
+                  <strong>${escapeHtml(item.label)}</strong>
+                  <small>${item.fee || item.feeRate ? `最低 ${money(item.fee)} · ` : ""}${escapeHtml(item.desc)}</small>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>优惠券</span>
+        <div class="food-chip-row">
+          ${propertyCoupons
+            .map(
+              (item) => `
+                <button data-property-option="couponId" data-property-value="${item.id}" aria-pressed="${draft.couponId === item.id ? "true" : "false"}">
+                  ${escapeHtml(item.label)}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-toggles">
+        <button data-property-toggle="electronicContract" aria-pressed="${draft.electronicContract ? "true" : "false"}">电子合同</button>
+        <button data-property-toggle="invoice" aria-pressed="${draft.invoice ? "true" : "false"}">发票/收据</button>
+        <button data-property-toggle="repairEscrow" aria-pressed="${draft.repairEscrow ? "true" : "false"}">资金/维修托管</button>
+        <button data-property-toggle="autoPayReminder" aria-pressed="${draft.autoPayReminder ? "true" : "false"}">账期提醒</button>
+      </div>
+      <textarea data-property-remark maxlength="70" placeholder="看房时间、合同备注、税费资料、维修问题">${escapeHtml(draft.remark)}</textarea>
+    </section>
+  `;
+}
+
+function renderPropertySpendList() {
+  const items = spendCatalogs.property || [];
+  const activeTag = state.spendFilters?.property || "全部";
+  const tags = ["全部", ...Array.from(new Set(items.map((item) => item.tag))).filter(Boolean)];
+  const visibleItems = activeTag === "全部" ? items : items.filter((item) => item.tag === activeTag);
+  return `
+    <div class="spend-filter" aria-label="房产分类筛选">
+      ${tags
+        .map(
+          (tag) => `
+            <button data-spend-filter-category="property" data-spend-filter-tag="${escapeHtml(tag)}" aria-pressed="${activeTag === tag ? "true" : "false"}">
+              ${escapeHtml(tag)}
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+    <div class="spend-list property-spend-list">
+      ${visibleItems
+        .map((baseItem) => {
+          const item = catalogItemForCheckout("property", baseItem);
+          const property = item.propertyBreakdown;
+          return `
+            <article class="spend-item property-spend-item">
+              <div>
+                <span class="spend-tag">${escapeHtml(baseItem.tag)}</span>
+                <strong>${escapeHtml(baseItem.name)}</strong>
+                <p>${escapeHtml(baseItem.desc)}</p>
+                <small class="checkout-line">${escapeHtml(property ? `${property.profile.label} · ${property.fulfillmentLabel} · ${property.summary}` : checkoutLineFor("property", baseItem))}</small>
+                ${renderSpendFlags(item)}
+              </div>
+              <div class="spend-action">
+                <small>标价 ${money(baseItem.price)}</small>
+                <b>${money(item.price)}</b>
+                <button class="primary" data-spend-category="property" data-spend-id="${baseItem.id}">支付</button>
+              </div>
+            </article>
+          `;
+        })
+        .join("")}
+      ${visibleItems.length ? "" : `<p class="empty">这个分类下暂时没有可花钱项目。</p>`}
+    </div>
+  `;
+}
+
+function propertyActionButton(record, action, label, doneLabel) {
+  const done = Boolean(record.propertyActions?.[action]);
+  return `<button data-property-record="${record.id}" data-property-action="${action}" ${done ? "disabled" : ""}>${done ? doneLabel : label}</button>`;
+}
+
+function renderPropertyAfterSales() {
+  const records = serviceRecordsFor("property").slice(0, 6);
+  if (!records.length) return `<p class="empty">支付房产项目后，这里会出现租约账期、网签交割、税费票据、报修和退租结算。</p>`;
+  return records
+    .map((record) => {
+      const tag = record.tag || record.propertyBreakdown?.tag || "";
+      const actionButtons = [];
+      if (["租房", "续租", "滞纳金"].includes(tag)) actionButtons.push(propertyActionButton(record, "leaseBill", "生成账期", "已生成"));
+      if (["租房", "续租", "退租"].includes(tag)) actionButtons.push(propertyActionButton(record, "checkout", "退租结算", "已结算"));
+      if (["买房", "认筹", "评估"].includes(tag)) actionButtons.push(propertyActionButton(record, "contract", "确认网签", "已确认"));
+      if (["税费", "维修基金", "登记", "买房"].includes(tag)) actionButtons.push(propertyActionButton(record, "taxReceipt", "归档票据", "已归档"));
+      if (["维修", "保障", "物业", "搬家", "装修"].includes(tag)) actionButtons.push(propertyActionButton(record, "repair", "发起报修", "已派单"));
+      if (tag === "保障") actionButtons.push(propertyActionButton(record, "claim", "申请理赔", "已提交"));
+      if (tag === "车位") actionButtons.push(propertyActionButton(record, "parking", "同步门禁", "已同步"));
+      return `
+        <div class="list-row refund-row property-action-row">
+          <div>
+            <strong>${escapeHtml(record.title)}</strong>
+            <span>${escapeHtml(record.status)} · ${money(record.amount)}</span>
+            <small class="record-meta">${escapeHtml(record.propertyBreakdown?.fulfillmentLabel || record.detail || "房产服务履约中")} · ${escapeHtml(record.propertyBreakdown?.promise || "按合同和平台规则处理后续")}</small>
+          </div>
+          <div class="travel-action-buttons">
+            ${actionButtons.length ? actionButtons.join("") : `<small>暂无可操作后续</small>`}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
 function renderPropertyApp() {
   return `
-    ${appHeader("房产", "租房、买房、物业和装修")}
+    ${appHeader("房产", "租房、买房、税费、物业和交割")}
     <section class="app-body commerce-body">
       ${renderPaymentSummary()}
+      ${renderPropertyControlPanel()}
       <h3>房产支出</h3>
-      ${renderSpendList("property", "支付")}
+      ${renderPropertySpendList()}
       <h3>我的房产/租约</h3>
       ${renderAssetList(state.assets.properties, "还没有房产或租约记录。")}
       <h3>房贷/月供</h3>
       ${renderLoanList("property")}
+      <h3>押金/认筹</h3>
+      ${renderHoldList("property")}
+      <h3>合同/交割后续</h3>
+      ${renderPropertyAfterSales()}
       <h3>房产账单</h3>
       ${renderRecordList(serviceRecordsFor("property"), "还没有房产账单。")}
     </section>
@@ -5651,23 +6109,36 @@ function buyCatalogItem(category, itemId) {
       addPhoneMessage("MoneyOS汽车", `${item.name} 已支付，${car.vehicle.plate}，${car.fulfillmentLabel}。${car.promise}`);
     }
   } else if (category === "property") {
+    const property = item.propertyBreakdown;
     if (item.asset === "property") {
       state.assets.properties.unshift({
         id: makeId(),
         kind: item.tag,
         name: item.name,
         amount: payment.amount,
-        detail: item.status,
+        detail: property ? `${property.profile.label} · ${property.profile.address} · ${property.fulfillmentLabel}` : item.status,
         status: item.status,
         meta: payment.meta,
         time: nowTime(),
         createdAt: Date.now(),
       });
       state.assets.properties = state.assets.properties.slice(0, 40);
-      state.stats.propertiesPaid += 1;
-    } else {
-      postRecord = addServiceRecord(category, item, payment);
     }
+    postRecord = addServiceRecord(category, item, payment, {
+      status: `${item.status || "房产服务已支付"}${property ? ` · ${property.profile.label} · ${property.fulfillmentLabel}` : ""}`,
+      detail: property
+        ? `${item.desc} ${property.profile.address}；${property.profile.owner}；${property.cycle.label}；${property.servicePackage.label}；${property.electronicContract ? "已启用电子合同" : "未启用电子合同"}；${property.invoice ? "已申请发票/收据" : "未申请票据"}；${property.repairEscrow ? "含资金/维修托管" : "未启用托管"}。${property.remark ? `备注：${property.remark}` : ""}`
+        : item.desc,
+      tracking: property ? `${property.merchant} · ${property.fulfillmentLabel} · ${property.promise}` : item.status,
+      tag: item.tag,
+      itemId: item.id,
+      propertyBreakdown: property,
+      refundRate: property?.refundRate,
+    });
+    if (property) {
+      addPhoneMessage("MoneyOS房产", `${item.name} 已支付，${property.profile.label}，${property.fulfillmentLabel}。${property.promise}`);
+    }
+    state.stats.propertiesPaid += 1;
   } else if (category === "services") {
     postRecord = addServiceRecord(category, item, payment);
     state.stats.billsPaid += 1;
@@ -6089,6 +6560,80 @@ function handleCarRecordAction(recordId, action) {
   record.status = `${record.status || record.title} · ${result.status}`;
   record.detail = `${record.detail || ""} ${result.text}`.trim();
   addNotice(result.notice, { kind: "cars", category: "cars" });
+  addPhoneMessage(result.source, result.text);
+  if (result.call) {
+    state.calls.unshift({ id: makeId(), number: result.source, type: "呼入", result: result.status, time: nowTime(), recordId: record.id });
+    state.calls = state.calls.slice(0, 60);
+    state.stats.callsReceived += 1;
+  }
+  advanceGameDay(result.source);
+  render();
+}
+
+function handlePropertyRecordAction(recordId, action) {
+  const record = state.serviceRecords.find((item) => item.id === recordId && item.category === "property");
+  if (!record) return;
+  record.propertyActions = record.propertyActions || {};
+  if (record.propertyActions[action]) {
+    addNotice("这项房产后续已经处理过。");
+    render();
+    return;
+  }
+  const property = record.propertyBreakdown || {};
+  const profile = property.profile || propertyProfiles[0];
+  const actionMap = {
+    leaseBill: {
+      status: "租约账期已生成 · 下期自动提醒",
+      source: "租约管家",
+      notice: `${record.title} 已生成租约账期`,
+      text: `${profile.label} 的租金账期已生成，地址 ${profile.address}。下个付款日会继续提醒你交钱。`,
+    },
+    checkout: {
+      status: "退租结算单已生成 · 待房东确认",
+      source: "退租结算",
+      notice: `${record.title} 已生成退租结算`,
+      text: `${profile.label} 已生成退租结算单，清洁、维修和水电尾款会影响押金退回。`,
+      call: true,
+    },
+    contract: {
+      status: "网签/合同节点已确认",
+      source: "交易中心",
+      notice: `${record.title} 已确认合同节点`,
+      text: `${profile.label} 的网签或合同节点已确认，下一步会继续催税费、按揭或交割资料。`,
+    },
+    taxReceipt: {
+      status: "税费/票据已归档",
+      source: "办证缴费",
+      notice: `${record.title} 已归档票据`,
+      text: `${profile.label} 的税费、维修资金或登记票据已归档，办证进度看起来更真实了。`,
+    },
+    repair: {
+      status: "报修工单已派发 · 师傅待联系",
+      source: "物业维修",
+      notice: `${record.title} 已发起报修`,
+      text: `${profile.address} 的报修工单已派发，上门费、材料费和加急费可能继续追加。`,
+      call: true,
+    },
+    claim: {
+      status: "居住保障理赔已提交",
+      source: "居住保障",
+      notice: `${record.title} 已提交理赔`,
+      text: `${profile.label} 的居住保障理赔已提交，平台会按条款核对漏水、门锁和责任材料。`,
+      call: true,
+    },
+    parking: {
+      status: "车位门禁与物业备案已同步",
+      source: "车位管理",
+      notice: `${record.title} 已同步车位门禁`,
+      text: `${profile.address} 已同步车位门禁和物业备案，换车牌或超期会继续收费。`,
+    },
+  };
+  const result = actionMap[action];
+  if (!result) return;
+  record.propertyActions[action] = nowTime();
+  record.status = `${record.status || record.title} · ${result.status}`;
+  record.detail = `${record.detail || ""} ${result.text}`.trim();
+  addNotice(result.notice, { kind: "property", category: "property" });
   addPhoneMessage(result.source, result.text);
   if (result.call) {
     state.calls.unshift({ id: makeId(), number: result.source, type: "呼入", result: result.status, time: nowTime(), recordId: record.id });
@@ -6746,6 +7291,27 @@ el.screen.addEventListener("click", (event) => {
     return handleCarRecordAction(carAction.dataset.carRecord, carAction.dataset.carAction);
   }
 
+  const propertyOption = target.closest("[data-property-option]");
+  if (propertyOption) {
+    if (!guardTutorialAction("propertyOption", "", event)) return;
+    updatePropertyDraft({ [propertyOption.dataset.propertyOption]: propertyOption.dataset.propertyValue || "" });
+    return render();
+  }
+
+  const propertyToggle = target.closest("[data-property-toggle]");
+  if (propertyToggle) {
+    if (!guardTutorialAction("propertyToggle", "", event)) return;
+    const key = propertyToggle.dataset.propertyToggle;
+    updatePropertyDraft({ [key]: !currentPropertyDraft()[key] });
+    return render();
+  }
+
+  const propertyAction = target.closest("[data-property-action]");
+  if (propertyAction) {
+    if (!guardTutorialAction("propertyAction", "", event)) return;
+    return handlePropertyRecordAction(propertyAction.dataset.propertyRecord, propertyAction.dataset.propertyAction);
+  }
+
   const paymentMethod = target.closest("[data-payment-method]");
   if (paymentMethod) {
     if (!guardTutorialAction("paymentMethod", paymentMethod.dataset.paymentMethod, event)) return;
@@ -6826,6 +7392,7 @@ el.screen.addEventListener("input", (event) => {
   if (event.target.matches("[data-shop-remark]")) updateShopDraft({ remark: event.target.value });
   if (event.target.matches("[data-travel-remark]")) updateTravelDraft({ remark: event.target.value });
   if (event.target.matches("[data-car-remark]")) updateCarDraft({ remark: event.target.value });
+  if (event.target.matches("[data-property-remark]")) updatePropertyDraft({ remark: event.target.value });
   if (event.target.matches("[data-sms-to]")) state.smsDraft.to = event.target.value;
   if (event.target.matches("[data-sms-text]")) state.smsDraft.text = event.target.value;
   saveState();
