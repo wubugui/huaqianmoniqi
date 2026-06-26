@@ -2,6 +2,8 @@
 
 一个无需安装依赖的手机模拟器原型。
 
+在线试玩：https://wubugui.github.io/huaqianmoniqi/
+
 打开 `index.html` 即可游玩，也可以部署到 GitHub Pages。核心循环是：
 
 - 初始只有点钞、电话、短信和应用商店。
