@@ -63,6 +63,28 @@ const contacts = [
   { id: "coworker", name: "同事小林", phone: "13600007777", note: "饭钱、打车、项目垫付", presets: [35, 128, 300] },
 ];
 
+const foodAddressBook = [
+  { id: "home", label: "家", address: "上海市浦东新区 MoneyOS 小区 8 号楼 1801", receiver: "张三", phone: "尾号 1234" },
+  { id: "office", label: "公司", address: "陆家嘴口袋科技 18F 前台", receiver: "张三", phone: "尾号 9966" },
+  { id: "hotel", label: "酒店", address: "人民广场今晚酒店 1208 房", receiver: "张三", phone: "隐私号 95013" },
+];
+
+const foodDeliveryModes = [
+  { id: "standard", label: "普通配送", fee: 5, eta: "30-45 分钟", promise: "骑手接单后按距离计费" },
+  { id: "priority", label: "优先配送", fee: 12, eta: "20-30 分钟", promise: "更快派单，仍可能堵车" },
+  { id: "scheduled", label: "预约配送", fee: 3, eta: "18:30-19:00", promise: "预约时段送达，超时赔券" },
+];
+
+const foodCoupons = [
+  { id: "platform-8", label: "满30减8", discount: 8, min: 30 },
+  { id: "brand-18", label: "满120减18", discount: 18, min: 120 },
+  { id: "delivery-vip", label: "会员免配送", discount: 5, min: 1, deliveryOnly: true },
+  { id: "none", label: "不使用", discount: 0, min: 0 },
+];
+
+const foodPhysicalTags = new Set(["外卖", "聚餐", "买菜", "跑腿", "即时零售"]);
+const foodPickupTags = new Set(["自取", "团购", "订座"]);
+
 const spendCatalogs = {
   store: [
     { id: "paid-app", name: "付费效率 App", price: 68, tag: "付费下载", desc: "一次买断的效率工具，下载后不可退订但可以后悔。", status: "付费 App 已购买" },
@@ -451,6 +473,16 @@ const defaultState = {
   checkoutDraft: null,
   checkoutMethod: "card",
   spendFilters: {},
+  foodDraft: {
+    addressId: "home",
+    deliveryMode: "standard",
+    couponId: "platform-8",
+    riderTip: 0,
+    tableware: "need",
+    privacyNumber: true,
+    invoice: false,
+    note: "",
+  },
   billRuns: [],
   profile: {
     address: "上海市浦东新区 MoneyOS 小区 8 号楼 1801",
@@ -632,6 +664,7 @@ function loadState() {
       checkoutDraft: parsed.checkoutDraft?.category && parsed.checkoutDraft?.itemId ? parsed.checkoutDraft : null,
       checkoutMethod: parsed.checkoutMethod === "credit" ? "credit" : "card",
       spendFilters: { ...defaultState.spendFilters, ...(parsed.spendFilters || {}) },
+      foodDraft: { ...defaultState.foodDraft, ...(parsed.foodDraft || {}) },
       profile: { ...defaultState.profile, ...(parsed.profile || {}) },
       smsDraft: { ...defaultState.smsDraft, ...parsed.smsDraft },
       installedAt: parsed.installedAt || {},
@@ -749,6 +782,7 @@ function newOrderNumber(category) {
 
 function categoryProfileLine(category, item = {}) {
   const profile = currentProfile();
+  if (category === "food" && item.foodBreakdown?.address) return `收货地址：${item.foodBreakdown.address.address}`;
   if (["shop", "food", "logistics", "recharge", "secondhand", "parenting", "pets"].includes(category)) return `收货地址：${profile.address}`;
   if (["travel", "tickets", "overseas", "health", "insurance", "education", "gov", "legal", "jobs"].includes(category)) return `实名信息：${profile.passenger}`;
   if (category === "cars" || category === "ride") return `车主/车牌：${profile.licensePlate}`;
@@ -764,6 +798,18 @@ function makePaymentMeta(category, item, payment) {
   const amount = Math.max(1, Math.floor(Number(payment.amount) || Number(item.price) || 0));
   const serviceFee = item.hold ? 0 : Math.max(0, Math.floor(amount * (category === "overseas" ? 0.018 : category === "stocks" ? 0.003 : 0.006)));
   const refundable = item.hold ? Math.max(1, Math.floor(amount * (item.refundRate || 1))) : 0;
+  if (category === "food" && item.foodBreakdown) {
+    const food = item.foodBreakdown;
+    return {
+      orderNo: newOrderNumber(category),
+      merchant: food.merchant,
+      channel: "MoneyOS 外卖",
+      serviceFee: food.serviceFee,
+      invoice: food.invoice ? currentProfile().invoiceTitle : "未申请发票",
+      fulfillment: `${food.address.label} · ${food.address.address} · ${food.deliveryLabel} · ${food.eta}`,
+      protection: `${config.checkout} ${food.privacyNumber ? "已启用隐私号。" : "使用真实手机号联系。"}${food.note ? ` 备注：${food.note}` : ""}`,
+    };
+  }
   const fulfillment = item.loan
     ? `${item.loan.lender || "贷款机构"}月供：${item.loan.months} 期，每期 ${money(item.loan.monthly)}`
     : item.hold
@@ -783,6 +829,9 @@ function makePaymentMeta(category, item, payment) {
 function checkoutLineFor(category, item) {
   const config = categoryRealism[category] || {};
   const lines = [];
+  if (category === "food" && item.foodBreakdown) {
+    lines.push(`实付含${item.foodBreakdown.summary}`);
+  }
   if (item.hold) lines.push(`押金/预授权，可退约 ${money(Math.floor(item.price * (item.refundRate || 1)))}`);
   if (item.loan) lines.push(`首付后生成 ${item.loan.months} 期月供，每期 ${money(item.loan.monthly)}`);
   if (item.asset === "subscription") lines.push("默认自动续费");
@@ -1496,6 +1545,120 @@ function renderPaymentSummary() {
   `;
 }
 
+function currentFoodDraft() {
+  const draft = { ...defaultState.foodDraft, ...(state.foodDraft || {}) };
+  if (!foodAddressBook.some((item) => item.id === draft.addressId)) draft.addressId = defaultState.foodDraft.addressId;
+  if (!foodDeliveryModes.some((item) => item.id === draft.deliveryMode)) draft.deliveryMode = defaultState.foodDraft.deliveryMode;
+  if (!foodCoupons.some((item) => item.id === draft.couponId)) draft.couponId = defaultState.foodDraft.couponId;
+  draft.riderTip = Math.max(0, Math.min(20, Math.floor(Number(draft.riderTip) || 0)));
+  draft.tableware = draft.tableware === "none" ? "none" : "need";
+  draft.privacyNumber = draft.privacyNumber !== false;
+  draft.invoice = Boolean(draft.invoice);
+  draft.note = String(draft.note || "").trim().slice(0, 50);
+  return draft;
+}
+
+function updateFoodDraft(patch) {
+  state.foodDraft = { ...currentFoodDraft(), ...patch };
+}
+
+function foodDeliveryEligible(item) {
+  return foodPhysicalTags.has(item.tag);
+}
+
+function foodOrderBreakdown(item) {
+  const draft = currentFoodDraft();
+  const address = foodAddressBook.find((entry) => entry.id === draft.addressId) || foodAddressBook[0];
+  const delivery = foodDeliveryModes.find((entry) => entry.id === draft.deliveryMode) || foodDeliveryModes[0];
+  const base = Math.max(1, Math.floor(Number(item.price) || 0));
+  const deliveryEligible = foodDeliveryEligible(item);
+  const pickup = foodPickupTags.has(item.tag);
+  const subscription = item.asset === "subscription";
+  const packingFee = deliveryEligible ? Math.max(2, Math.ceil(base * (item.tag === "聚餐" ? 0.05 : 0.035))) : item.tag === "自取" ? 1 : 0;
+  let deliveryFee = deliveryEligible ? delivery.fee : 0;
+  if (item.tag === "买菜") deliveryFee = Math.max(deliveryFee, 6);
+  if (item.tag === "跑腿") deliveryFee += 8;
+  const serviceFee = deliveryEligible || pickup ? Math.max(1, Math.floor(base * 0.018)) : 0;
+  const riderTip = deliveryEligible ? draft.riderTip : 0;
+  const coupon = foodCoupons.find((entry) => entry.id === draft.couponId) || foodCoupons[0];
+  const couponAllowed = !subscription && !item.hold && base >= Math.max(0, coupon.min || 0);
+  const discountBase = base + packingFee + deliveryFee + serviceFee + riderTip;
+  let discount = 0;
+  if (couponAllowed) {
+    discount = coupon.deliveryOnly ? Math.min(deliveryFee, coupon.discount) : Math.min(coupon.discount, discountBase - 1);
+  }
+  const total = Math.max(1, discountBase - discount);
+  const eta = deliveryEligible ? delivery.eta : item.tag === "自取" ? "门店出杯后可取" : item.tag === "订座" ? "按预约时间保留桌位" : "券码立即入账";
+  const deliveryLabel = deliveryEligible ? delivery.label : item.tag === "自取" ? "到店自取" : item.tag === "团购" ? "到店核销" : item.tag === "订座" ? "订座保留" : "线上权益";
+  const merchant = item.tag === "买菜" ? "MoneyOS 超市小时达" : item.tag === "跑腿" ? "MoneyOS 跑腿帮买" : item.tag === "团购" || item.tag === "订座" ? "附近到店餐饮" : "附近外卖商家";
+  const lines = [
+    ["商品原价", base],
+    ["包装/餐具费", packingFee],
+    ["配送/履约费", deliveryFee],
+    ["平台服务费", serviceFee],
+    ["骑手小费", riderTip],
+    ["优惠券", -discount],
+  ].filter(([, amount]) => amount);
+  const summaryParts = [
+    packingFee ? `包装 ${money(packingFee)}` : "",
+    deliveryFee ? `配送 ${money(deliveryFee)}` : "",
+    serviceFee ? `服务费 ${money(serviceFee)}` : "",
+    riderTip ? `小费 ${money(riderTip)}` : "",
+    discount ? `优惠 -${money(discount)}` : "",
+  ].filter(Boolean);
+  return {
+    address,
+    deliveryLabel,
+    eta,
+    merchant,
+    base,
+    packingFee,
+    deliveryFee,
+    serviceFee,
+    riderTip,
+    discount,
+    total,
+    lines,
+    summary: summaryParts.length ? summaryParts.join("、") : "无额外费用",
+    couponLabel: discount ? coupon.label : "未用优惠",
+    tableware: draft.tableware,
+    privacyNumber: draft.privacyNumber,
+    invoice: draft.invoice,
+    note: draft.note,
+    promise: deliveryEligible ? delivery.promise : "到店或权益类订单以券码/预约记录履约",
+  };
+}
+
+function catalogItemForCheckout(category, item) {
+  if (category !== "food") return item;
+  const foodBreakdown = foodOrderBreakdown(item);
+  return {
+    ...item,
+    price: foodBreakdown.total,
+    desc: `${item.desc} 实付包含${foodBreakdown.summary}。`,
+    foodBreakdown,
+  };
+}
+
+function renderCheckoutBreakdown(item) {
+  if (!item.foodBreakdown?.lines?.length) return "";
+  return `
+    <div class="checkout-breakdown">
+      ${item.foodBreakdown.lines
+        .map(
+          ([label, amount]) => `
+            <div>
+              <span>${escapeHtml(label)}</span>
+              <b>${amount < 0 ? "-" : ""}${money(Math.abs(amount))}</b>
+            </div>
+          `,
+        )
+        .join("")}
+      <small>${escapeHtml(item.foodBreakdown.couponLabel)} · ${escapeHtml(item.foodBreakdown.promise)}</small>
+    </div>
+  `;
+}
+
 function renderSpendList(category, buttonText = "支付") {
   const items = spendCatalogs[category] || [];
   const activeTag = state.spendFilters?.[category] || "全部";
@@ -1543,7 +1706,7 @@ function checkoutItemFromDraft() {
   if (!draft?.category || !draft?.itemId) return null;
   const item = (spendCatalogs[draft.category] || []).find((entry) => entry.id === draft.itemId);
   if (!item) return null;
-  return { category: draft.category, item };
+  return { category: draft.category, item: catalogItemForCheckout(draft.category, item) };
 }
 
 function checkoutBlockReason(category, item) {
@@ -1607,6 +1770,7 @@ function renderCheckoutSheet() {
             <span>应付金额</span>
             <strong>${money(item.price)}</strong>
           </div>
+          ${renderCheckoutBreakdown(item)}
           <dl class="checkout-details">
             <div><dt>商户</dt><dd>${escapeHtml(meta.merchant)}</dd></div>
             <div><dt>订单号</dt><dd>${escapeHtml(meta.orderNo)}</dd></div>
@@ -2077,13 +2241,133 @@ function renderWalletApp() {
   `;
 }
 
+function renderFoodControlPanel() {
+  const draft = currentFoodDraft();
+  const address = foodAddressBook.find((entry) => entry.id === draft.addressId) || foodAddressBook[0];
+  return `
+    <section class="food-panel">
+      <div class="food-address">
+        <span>送达</span>
+        <strong>${escapeHtml(address.label)} · ${escapeHtml(address.receiver)}</strong>
+        <p>${escapeHtml(address.address)} · ${escapeHtml(address.phone)}</p>
+      </div>
+      <div class="food-segment" aria-label="收货地址">
+        ${foodAddressBook
+          .map(
+            (item) => `
+              <button data-food-option="addressId" data-food-value="${item.id}" aria-pressed="${draft.addressId === item.id ? "true" : "false"}">
+                ${escapeHtml(item.label)}
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+      <div class="food-section">
+        <span>配送</span>
+        <div class="food-option-grid">
+          ${foodDeliveryModes
+            .map(
+              (item) => `
+                <button data-food-option="deliveryMode" data-food-value="${item.id}" aria-pressed="${draft.deliveryMode === item.id ? "true" : "false"}">
+                  <strong>${escapeHtml(item.label)}</strong>
+                  <small>${money(item.fee)} · ${escapeHtml(item.eta)}</small>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>优惠券</span>
+        <div class="food-chip-row">
+          ${foodCoupons
+            .map(
+              (item) => `
+                <button data-food-option="couponId" data-food-value="${item.id}" aria-pressed="${draft.couponId === item.id ? "true" : "false"}">
+                  ${escapeHtml(item.label)}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>骑手小费</span>
+        <div class="food-chip-row">
+          ${[0, 2, 5, 10]
+            .map(
+              (amount) => `
+                <button data-food-option="riderTip" data-food-value="${amount}" aria-pressed="${draft.riderTip === amount ? "true" : "false"}">
+                  ${amount ? money(amount) : "不加"}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-toggles">
+        <button data-food-option="tableware" data-food-value="${draft.tableware === "none" ? "need" : "none"}" aria-pressed="${draft.tableware !== "none" ? "true" : "false"}">餐具</button>
+        <button data-food-toggle="privacyNumber" aria-pressed="${draft.privacyNumber ? "true" : "false"}">隐私号</button>
+        <button data-food-toggle="invoice" aria-pressed="${draft.invoice ? "true" : "false"}">发票</button>
+      </div>
+      <textarea data-food-note maxlength="50" placeholder="口味、门牌、不要敲门">${escapeHtml(draft.note)}</textarea>
+    </section>
+  `;
+}
+
+function renderFoodSpendList() {
+  const items = spendCatalogs.food || [];
+  const activeTag = state.spendFilters?.food || "全部";
+  const tags = ["全部", ...Array.from(new Set(items.map((item) => item.tag))).filter(Boolean)];
+  const visibleItems = activeTag === "全部" ? items : items.filter((item) => item.tag === activeTag);
+  return `
+    <div class="spend-filter" aria-label="外卖分类筛选">
+      ${tags
+        .map(
+          (tag) => `
+            <button data-spend-filter-category="food" data-spend-filter-tag="${escapeHtml(tag)}" aria-pressed="${activeTag === tag ? "true" : "false"}">
+              ${escapeHtml(tag)}
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+    <div class="spend-list food-spend-list">
+      ${visibleItems
+        .map((baseItem) => {
+          const item = catalogItemForCheckout("food", baseItem);
+          const food = item.foodBreakdown;
+          return `
+            <article class="spend-item food-spend-item">
+              <div>
+                <span class="spend-tag">${escapeHtml(baseItem.tag)}</span>
+                <strong>${escapeHtml(baseItem.name)}</strong>
+                <p>${escapeHtml(baseItem.desc)}</p>
+                <small class="checkout-line">${escapeHtml(food ? `${food.deliveryLabel} · ${food.eta} · ${food.summary}` : checkoutLineFor("food", baseItem))}</small>
+                ${renderSpendFlags(item)}
+              </div>
+              <div class="spend-action">
+                <small>原价 ${money(baseItem.price)}</small>
+                <b>${money(item.price)}</b>
+                <button class="primary" data-spend-category="food" data-spend-id="${baseItem.id}">下单</button>
+              </div>
+            </article>
+          `;
+        })
+        .join("")}
+      ${visibleItems.length ? "" : `<p class="empty">这个分类下暂时没有可花钱项目。</p>`}
+    </div>
+  `;
+}
+
 function renderFoodApp() {
   return `
     ${appHeader("外卖", "点餐、买菜、跑腿和会员")}
     <section class="app-body commerce-body">
       ${renderPaymentSummary()}
+      ${renderFoodControlPanel()}
       <h3>可下单</h3>
-      ${renderSpendList("food", "下单")}
+      ${renderFoodSpendList()}
       <h3>最近外卖</h3>
       ${renderRecordList(recordsFor("food"), "还没有外卖订单。")}
     </section>
@@ -3203,8 +3487,9 @@ function confirmCheckout() {
 
 function buyCatalogItem(category, itemId) {
   if (category === "credit") return buyCreditItem(itemId);
-  const item = (spendCatalogs[category] || []).find((entry) => entry.id === itemId);
-  if (!item) return;
+  const baseItem = (spendCatalogs[category] || []).find((entry) => entry.id === itemId);
+  if (!baseItem) return;
+  const item = catalogItemForCheckout(category, baseItem);
   if (categoryRequiresNetwork(category) && !hasActivePlan()) {
     addNotice(blockReasonForApp(category));
     render();
@@ -3252,10 +3537,13 @@ function buyCatalogItem(category, itemId) {
     state.stats.walletPayments += payment.amount;
   } else if (category === "food") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
+    const food = item.foodBreakdown;
     addOrder(category, item, payment, {
-      status: `${item.status || "订单已提交"} · 永远还差 3 分钟`,
-      detail: `${item.desc} 骑手一直在路上，但不会真的到你手里。`,
-      tracking: "预计 3 分钟后送达",
+      status: `${item.status || "订单已提交"} · ${food?.deliveryLabel || "商家履约中"} · ${food?.eta || "永远还差 3 分钟"}`,
+      detail: food
+        ? `${baseItem.desc} ${food.address.label}：${food.address.address}；${food.tableware === "none" ? "无需餐具" : "需要餐具"}；${food.privacyNumber ? "隐私号保护" : "真实手机号联系"}；${food.invoice ? "已申请发票" : "未申请发票"}。${food.note ? `备注：${food.note}` : ""}`
+        : `${item.desc} 骑手一直在路上，但不会真的到你手里。`,
+      tracking: food ? `${food.deliveryLabel} · ${food.eta} · ${food.couponLabel}` : "预计 3 分钟后送达",
     });
   } else if (category === "shop") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
@@ -4085,6 +4373,24 @@ el.screen.addEventListener("click", (event) => {
     return payMonthlyCommitments();
   }
 
+  const foodOption = event.target.closest("[data-food-option]");
+  if (foodOption) {
+    if (!guardTutorialAction("foodOption", "", event)) return;
+    const key = foodOption.dataset.foodOption;
+    const rawValue = foodOption.dataset.foodValue || "";
+    const value = key === "riderTip" ? Math.max(0, Math.floor(Number(rawValue) || 0)) : rawValue;
+    updateFoodDraft({ [key]: value });
+    return render();
+  }
+
+  const foodToggle = event.target.closest("[data-food-toggle]");
+  if (foodToggle) {
+    if (!guardTutorialAction("foodToggle", "", event)) return;
+    const key = foodToggle.dataset.foodToggle;
+    updateFoodDraft({ [key]: !currentFoodDraft()[key] });
+    return render();
+  }
+
   const paymentMethod = event.target.closest("[data-payment-method]");
   if (paymentMethod) {
     if (!guardTutorialAction("paymentMethod", paymentMethod.dataset.paymentMethod, event)) return;
@@ -4161,6 +4467,7 @@ el.screen.addEventListener("input", (event) => {
   }
   if (event.target.matches("[data-card-number], [data-transfer-amount]")) updateBankDraft();
   if (event.target.matches("[data-person-contact], [data-person-amount], [data-person-note]")) updatePersonTransferDraft();
+  if (event.target.matches("[data-food-note]")) updateFoodDraft({ note: event.target.value });
   if (event.target.matches("[data-sms-to]")) state.smsDraft.to = event.target.value;
   if (event.target.matches("[data-sms-text]")) state.smsDraft.text = event.target.value;
   saveState();
