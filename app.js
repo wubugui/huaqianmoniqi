@@ -85,6 +85,32 @@ const foodCoupons = [
 const foodPhysicalTags = new Set(["外卖", "聚餐", "买菜", "跑腿", "即时零售"]);
 const foodPickupTags = new Set(["自取", "团购", "订座"]);
 
+const SHOP_CART_ID = "__shop_cart__";
+
+const shopAddressBook = [
+  { id: "home", label: "家", address: "上海市浦东新区 MoneyOS 小区 8 号楼 1801", receiver: "张三", phone: "尾号 1234" },
+  { id: "office", label: "公司", address: "陆家嘴口袋科技 18F 前台", receiver: "张三", phone: "尾号 9966" },
+  { id: "locker", label: "驿站", address: "MoneyOS 驿站 A 区 03 柜", receiver: "张三", phone: "隐私号 95013" },
+];
+
+const shopShippingModes = [
+  { id: "standard", label: "普通快递", fee: 8, eta: "2-3 天", promise: "满 199 免基础运费，偏远地区另算" },
+  { id: "express", label: "次日达", fee: 18, eta: "明日 18:00 前", promise: "更快发货，夜间下单顺延" },
+  { id: "scheduled", label: "预约送装", fee: 80, eta: "预约上门", promise: "大件商品送装一体，电梯和楼层可能加价" },
+  { id: "pickup", label: "驿站自提", fee: 0, eta: "到站短信通知", promise: "到站后保管 48 小时，超时催取" },
+];
+
+const shopCoupons = [
+  { id: "platform-50", label: "满500减50", discount: 50, min: 500 },
+  { id: "brand-300", label: "满3000减300", discount: 300, min: 3000 },
+  { id: "big-1000", label: "满8000减1000", discount: 1000, min: 8000 },
+  { id: "free-shipping", label: "运费券", discount: 18, min: 1, deliveryOnly: true },
+  { id: "none", label: "不使用", discount: 0, min: 0 },
+];
+
+const shopLargeTags = new Set(["家具", "家电"]);
+const shopImportedTags = new Set(["美妆"]);
+
 const moneyCountryNodes = [
   { id: "northport", name: "北港", kind: "港口", x: 18, y: 18 },
   { id: "snowcapital", name: "雪京", kind: "首都", x: 47, y: 12 },
@@ -497,6 +523,16 @@ const defaultState = {
     invoice: false,
     note: "",
   },
+  shopDraft: {
+    addressId: "home",
+    shippingMode: "standard",
+    couponId: "platform-50",
+    freightInsurance: true,
+    invoice: true,
+    giftWrap: false,
+    remark: "",
+  },
+  shopCart: [],
   billRuns: [],
   profile: {
     address: "上海市浦东新区 MoneyOS 小区 8 号楼 1801",
@@ -685,6 +721,8 @@ function loadState() {
       checkoutMethod: parsed.checkoutMethod === "credit" ? "credit" : "card",
       spendFilters: { ...defaultState.spendFilters, ...(parsed.spendFilters || {}) },
       foodDraft: { ...defaultState.foodDraft, ...(parsed.foodDraft || {}) },
+      shopDraft: { ...defaultState.shopDraft, ...(parsed.shopDraft || {}) },
+      shopCart: Array.isArray(parsed.shopCart) ? parsed.shopCart.slice(0, 24) : [],
       profile: { ...defaultState.profile, ...(parsed.profile || {}) },
       smsDraft: { ...defaultState.smsDraft, ...parsed.smsDraft },
       installedAt: parsed.installedAt || {},
@@ -803,6 +841,7 @@ function newOrderNumber(category) {
 function categoryProfileLine(category, item = {}) {
   const profile = currentProfile();
   if (category === "food" && item.foodBreakdown?.address) return `收货地址：${item.foodBreakdown.address.address}`;
+  if (category === "shop" && item.shopBreakdown?.address) return `收货地址：${item.shopBreakdown.address.address}`;
   if (["shop", "food", "logistics", "recharge", "secondhand", "parenting", "pets"].includes(category)) return `收货地址：${profile.address}`;
   if (["travel", "tickets", "overseas", "health", "insurance", "education", "gov", "legal", "jobs"].includes(category)) return `实名信息：${profile.passenger}`;
   if (category === "cars" || category === "ride") return `车主/车牌：${profile.licensePlate}`;
@@ -830,6 +869,18 @@ function makePaymentMeta(category, item, payment) {
       protection: `${config.checkout} ${food.privacyNumber ? "已启用隐私号。" : "使用真实手机号联系。"}${food.note ? ` 备注：${food.note}` : ""}`,
     };
   }
+  if (category === "shop" && item.shopBreakdown) {
+    const shop = item.shopBreakdown;
+    return {
+      orderNo: newOrderNumber(category),
+      merchant: shop.merchant,
+      channel: "MoneyOS 购物",
+      serviceFee: shop.serviceFee,
+      invoice: shop.invoice ? currentProfile().invoiceTitle : "未申请发票",
+      fulfillment: `${shop.address.label} · ${shop.address.address} · ${shop.shippingLabel} · ${shop.eta}`,
+      protection: `${config.checkout} ${shop.freightInsurance ? "已购买运费险。" : "未购买运费险。"}${shop.giftWrap ? " 已加礼品包装。" : ""}${shop.remark ? ` 备注：${shop.remark}` : ""}`,
+    };
+  }
   const fulfillment = item.loan
     ? `${item.loan.lender || "贷款机构"}月供：${item.loan.months} 期，每期 ${money(item.loan.monthly)}`
     : item.hold
@@ -851,6 +902,10 @@ function checkoutLineFor(category, item) {
   const lines = [];
   if (category === "food" && item.foodBreakdown) {
     lines.push(`实付含${item.foodBreakdown.summary}`);
+  }
+  if (category === "shop" && item.shopBreakdown) {
+    lines.push(`实付含${item.shopBreakdown.summary}`);
+    lines.push(item.shopBreakdown.returnRule);
   }
   if (item.hold) lines.push(`押金/预授权，可退约 ${money(Math.floor(item.price * (item.refundRate || 1)))}`);
   if (item.loan) lines.push(`首付后生成 ${item.loan.months} 期月供，每期 ${money(item.loan.monthly)}`);
@@ -1980,22 +2035,234 @@ function foodOrderBreakdown(item) {
   };
 }
 
-function catalogItemForCheckout(category, item) {
-  if (category !== "food") return item;
-  const foodBreakdown = foodOrderBreakdown(item);
+function currentShopDraft() {
+  const draft = { ...defaultState.shopDraft, ...(state.shopDraft || {}) };
+  if (!shopAddressBook.some((item) => item.id === draft.addressId)) draft.addressId = defaultState.shopDraft.addressId;
+  if (!shopShippingModes.some((item) => item.id === draft.shippingMode)) draft.shippingMode = defaultState.shopDraft.shippingMode;
+  if (!shopCoupons.some((item) => item.id === draft.couponId)) draft.couponId = defaultState.shopDraft.couponId;
+  draft.freightInsurance = draft.freightInsurance !== false;
+  draft.invoice = draft.invoice !== false;
+  draft.giftWrap = Boolean(draft.giftWrap);
+  draft.remark = String(draft.remark || "").trim().slice(0, 60);
+  return draft;
+}
+
+function updateShopDraft(patch) {
+  state.shopDraft = { ...currentShopDraft(), ...patch };
+}
+
+function shopCartEligible(item) {
+  return item && item.asset !== "subscription" && item.asset !== "policy";
+}
+
+function sanitizedShopCart() {
+  const catalog = spendCatalogs.shop || [];
+  const merged = [];
+  (Array.isArray(state.shopCart) ? state.shopCart : []).forEach((entry) => {
+    const item = catalog.find((candidate) => candidate.id === entry.itemId);
+    if (!shopCartEligible(item)) return;
+    const quantity = Math.max(1, Math.min(9, Math.floor(Number(entry.quantity) || 1)));
+    const existing = merged.find((candidate) => candidate.itemId === item.id);
+    if (existing) existing.quantity = Math.min(9, existing.quantity + quantity);
+    else merged.push({ itemId: item.id, quantity });
+  });
+  state.shopCart = merged.slice(0, 12);
+  return state.shopCart;
+}
+
+function shopCartLineItems() {
+  return sanitizedShopCart()
+    .map((entry) => {
+      const item = (spendCatalogs.shop || []).find((candidate) => candidate.id === entry.itemId);
+      if (!item) return null;
+      const quantity = Math.max(1, Math.min(9, Math.floor(Number(entry.quantity) || 1)));
+      return {
+        id: item.id,
+        name: item.name,
+        tag: item.tag,
+        price: item.price,
+        quantity,
+        subtotal: item.price * quantity,
+      };
+    })
+    .filter(Boolean);
+}
+
+function shopCartBaseItem() {
+  const lines = shopCartLineItems();
+  if (!lines.length) return null;
+  const base = lines.reduce((sum, line) => sum + line.subtotal, 0);
+  const names = lines.map((line) => `${line.name}×${line.quantity}`).join("、");
   return {
-    ...item,
-    price: foodBreakdown.total,
-    desc: `${item.desc} 实付包含${foodBreakdown.summary}。`,
-    foodBreakdown,
+    id: SHOP_CART_ID,
+    name: `购物车 ${lines.reduce((sum, line) => sum + line.quantity, 0)} 件合并结算`,
+    price: base,
+    tag: "购物车",
+    desc: `购物车合并付款，包含${names}。平台会按真实电商规则拆单、发货、售后。`,
+    status: "多商家已接单",
+    cartLines: lines,
   };
 }
 
+function addShopCartItem(itemId) {
+  const item = (spendCatalogs.shop || []).find((entry) => entry.id === itemId);
+  if (!shopCartEligible(item)) {
+    addNotice("这个商品需要单独购买，不能放进购物车。");
+    render();
+    return;
+  }
+  const cart = sanitizedShopCart();
+  const existing = cart.find((entry) => entry.itemId === item.id);
+  if (existing) existing.quantity = Math.min(9, existing.quantity + 1);
+  else cart.push({ itemId: item.id, quantity: 1 });
+  state.shopCart = cart.slice(0, 12);
+  addNotice(`${item.name} 已加入购物车`);
+  render();
+}
+
+function updateShopCartQuantity(itemId, delta) {
+  const cart = sanitizedShopCart();
+  const entry = cart.find((item) => item.itemId === itemId);
+  if (!entry) return;
+  entry.quantity = Math.max(0, Math.min(9, Math.floor(Number(entry.quantity) || 1) + delta));
+  state.shopCart = cart.filter((item) => item.quantity > 0);
+  render();
+}
+
+function removeShopCartItem(itemId) {
+  state.shopCart = sanitizedShopCart().filter((item) => item.itemId !== itemId);
+  render();
+}
+
+function shopLineItemsFor(item) {
+  if (Array.isArray(item.cartLines) && item.cartLines.length) return item.cartLines;
+  return [{ id: item.id, name: item.name, tag: item.tag, price: item.price, quantity: 1, subtotal: item.price }];
+}
+
+function hasActiveShopPlus() {
+  return state.subscriptions.some((item) => item.source === "shop" && !String(item.status || "").includes("取消"));
+}
+
+function shopOrderBreakdown(item) {
+  const draft = currentShopDraft();
+  const address = shopAddressBook.find((entry) => entry.id === draft.addressId) || shopAddressBook[0];
+  const shipping = shopShippingModes.find((entry) => entry.id === draft.shippingMode) || shopShippingModes[0];
+  const lineItems = shopLineItemsFor(item);
+  const base = Math.max(1, Math.floor(lineItems.reduce((sum, line) => sum + Number(line.subtotal || 0), 0) || Number(item.price) || 0));
+  const physical = item.asset !== "subscription" && item.asset !== "policy";
+  const hasLargeItem = lineItems.some((line) => shopLargeTags.has(line.tag));
+  const hasImportedItem = lineItems.some((line) => shopImportedTags.has(line.tag));
+  let freightFee = physical ? shipping.fee : 0;
+  if (physical && shipping.id === "standard" && base >= 199) freightFee = 0;
+  if (physical && hasLargeItem) freightFee = Math.max(freightFee, shipping.id === "scheduled" ? 80 : 36);
+  const installFee = physical && hasLargeItem ? (lineItems.some((line) => line.tag === "家具") ? 120 : 80) : 0;
+  const importTax = physical && hasImportedItem ? Math.floor(base * 0.091) : 0;
+  const serviceFee = physical ? Math.max(1, Math.floor(base * 0.006)) : 0;
+  const freightInsuranceFee = physical && draft.freightInsurance ? Math.max(3, Math.min(69, Math.ceil(base * 0.006))) : 0;
+  const giftWrapFee = physical && draft.giftWrap && !hasLargeItem ? 18 : 0;
+  const coupon = shopCoupons.find((entry) => entry.id === draft.couponId) || shopCoupons[0];
+  const couponBase = base + freightFee + installFee + importTax + serviceFee + freightInsuranceFee + giftWrapFee;
+  const couponAllowed = physical && base >= Math.max(0, coupon.min || 0);
+  let discount = 0;
+  if (couponAllowed) {
+    discount = coupon.deliveryOnly ? Math.min(freightFee, coupon.discount) : Math.min(coupon.discount, couponBase - 1);
+  }
+  const shopPlusDiscount = physical && hasActiveShopPlus() ? Math.min(18, freightFee + serviceFee) : 0;
+  const total = Math.max(1, couponBase - discount - shopPlusDiscount);
+  const merchant = item.id === SHOP_CART_ID
+    ? "MoneyOS 多商家购物车"
+    : hasImportedItem
+      ? "MoneyOS 保税仓"
+      : item.tag === "数码" || item.tag === "办公"
+        ? "MoneyOS 自营旗舰店"
+        : "品牌授权店";
+  const lines = [
+    ["商品金额", base],
+    ["运费/送装费", freightFee],
+    ["安装服务费", installFee],
+    ["进口税费预估", importTax],
+    ["平台服务费", serviceFee],
+    ["运费险", freightInsuranceFee],
+    ["礼品包装", giftWrapFee],
+    ["店铺/平台优惠", -discount],
+    ["省钱会员抵扣", -shopPlusDiscount],
+  ].filter(([, amount]) => amount);
+  const summaryParts = [
+    freightFee ? `运费 ${money(freightFee)}` : "",
+    installFee ? `送装 ${money(installFee)}` : "",
+    importTax ? `税费 ${money(importTax)}` : "",
+    serviceFee ? `服务费 ${money(serviceFee)}` : "",
+    freightInsuranceFee ? `运费险 ${money(freightInsuranceFee)}` : "",
+    giftWrapFee ? `包装 ${money(giftWrapFee)}` : "",
+    discount ? `优惠 -${money(discount)}` : "",
+    shopPlusDiscount ? `会员抵扣 -${money(shopPlusDiscount)}` : "",
+  ].filter(Boolean);
+  const refundRate = item.asset === "subscription" ? 0.35 : item.asset === "policy" ? 0.72 : hasImportedItem ? 0.88 : draft.freightInsurance ? 0.96 : 0.92;
+  const refundFee = Math.max(1, total - Math.floor(total * refundRate));
+  return {
+    address,
+    shippingLabel: physical ? shipping.label : "线上权益",
+    eta: physical ? shipping.eta : "立即生效",
+    merchant,
+    base,
+    freightFee,
+    installFee,
+    importTax,
+    serviceFee,
+    freightInsuranceFee,
+    giftWrapFee,
+    discount,
+    shopPlusDiscount,
+    total,
+    lines,
+    lineItems,
+    summary: summaryParts.length ? summaryParts.join("、") : "无额外费用",
+    couponLabel: discount ? coupon.label : "未用优惠",
+    freightInsurance: Boolean(freightInsuranceFee),
+    invoice: draft.invoice,
+    giftWrap: Boolean(giftWrapFee),
+    remark: draft.remark,
+    promise: physical ? shipping.promise : "数字权益/会员服务以账户开通记录履约",
+    returnRule: item.asset === "subscription"
+      ? "会员权益生效后仅退未使用部分"
+      : item.asset === "policy"
+        ? "服务保单按退保规则扣除已生效天数"
+        : hasImportedItem
+          ? "跨境/美妆拆封影响退款，税费可能不退"
+          : "支持 7 天无理由，退货运费按运费险/责任方结算",
+    refundRate,
+    refundFee,
+  };
+}
+
+function catalogItemForCheckout(category, item) {
+  if (category === "food") {
+    const foodBreakdown = foodOrderBreakdown(item);
+    return {
+      ...item,
+      price: foodBreakdown.total,
+      desc: `${item.desc} 实付包含${foodBreakdown.summary}。`,
+      foodBreakdown,
+    };
+  }
+  if (category === "shop") {
+    const shopBreakdown = shopOrderBreakdown(item);
+    return {
+      ...item,
+      price: shopBreakdown.total,
+      desc: `${item.desc} 实付包含${shopBreakdown.summary}。`,
+      shopBreakdown,
+    };
+  }
+  return item;
+}
+
 function renderCheckoutBreakdown(item) {
-  if (!item.foodBreakdown?.lines?.length) return "";
+  const breakdown = item.foodBreakdown || item.shopBreakdown;
+  if (!breakdown?.lines?.length) return "";
   return `
     <div class="checkout-breakdown">
-      ${item.foodBreakdown.lines
+      ${breakdown.lines
         .map(
           ([label, amount]) => `
             <div>
@@ -2005,7 +2272,7 @@ function renderCheckoutBreakdown(item) {
           `,
         )
         .join("")}
-      <small>${escapeHtml(item.foodBreakdown.couponLabel)} · ${escapeHtml(item.foodBreakdown.promise)}</small>
+      <small>${escapeHtml(breakdown.couponLabel)} · ${escapeHtml(breakdown.promise)}</small>
     </div>
   `;
 }
@@ -2055,6 +2322,10 @@ function renderSpendList(category, buttonText = "支付") {
 function checkoutItemFromDraft() {
   const draft = state.checkoutDraft;
   if (!draft?.category || !draft?.itemId) return null;
+  if (draft.category === "shop" && draft.itemId === SHOP_CART_ID) {
+    const item = shopCartBaseItem();
+    return item ? { category: draft.category, item: catalogItemForCheckout(draft.category, item) } : null;
+  }
   const item = (spendCatalogs[draft.category] || []).find((entry) => entry.id === draft.itemId);
   if (!item) return null;
   return { category: draft.category, item: catalogItemForCheckout(draft.category, item) };
@@ -2795,6 +3066,148 @@ function renderFoodSpendList() {
   `;
 }
 
+function renderShopControlPanel() {
+  const draft = currentShopDraft();
+  const address = shopAddressBook.find((entry) => entry.id === draft.addressId) || shopAddressBook[0];
+  const cartLines = shopCartLineItems();
+  const cartBase = cartLines.reduce((sum, line) => sum + line.subtotal, 0);
+  return `
+    <section class="food-panel shop-panel">
+      <div class="food-address shop-address">
+        <span>默认收货</span>
+        <strong>${escapeHtml(address.label)} · ${escapeHtml(address.receiver)} · ${escapeHtml(address.phone)}</strong>
+        <p>${escapeHtml(address.address)}</p>
+      </div>
+      <div class="food-segment" aria-label="购物收货地址">
+        ${shopAddressBook
+          .map(
+            (item) => `
+              <button data-shop-option="addressId" data-shop-value="${item.id}" aria-pressed="${draft.addressId === item.id ? "true" : "false"}">
+                ${escapeHtml(item.label)}
+              </button>
+            `,
+          )
+          .join("")}
+      </div>
+      <div class="food-section">
+        <span>配送方式</span>
+        <div class="food-option-grid">
+          ${shopShippingModes
+            .map(
+              (item) => `
+                <button data-shop-option="shippingMode" data-shop-value="${item.id}" aria-pressed="${draft.shippingMode === item.id ? "true" : "false"}">
+                  <strong>${escapeHtml(item.label)} · ${money(item.fee)}</strong>
+                  <small>${escapeHtml(item.eta)} · ${escapeHtml(item.promise)}</small>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-section">
+        <span>优惠券</span>
+        <div class="food-chip-row">
+          ${shopCoupons
+            .map(
+              (item) => `
+                <button data-shop-option="couponId" data-shop-value="${item.id}" aria-pressed="${draft.couponId === item.id ? "true" : "false"}">
+                  ${escapeHtml(item.label)}
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="food-toggles">
+        <button data-shop-toggle="freightInsurance" aria-pressed="${draft.freightInsurance ? "true" : "false"}">运费险</button>
+        <button data-shop-toggle="invoice" aria-pressed="${draft.invoice ? "true" : "false"}">发票</button>
+        <button data-shop-toggle="giftWrap" aria-pressed="${draft.giftWrap ? "true" : "false"}">礼品包装</button>
+      </div>
+      <textarea data-shop-remark maxlength="60" placeholder="门牌、发票备注、送装时间">${escapeHtml(draft.remark)}</textarea>
+      <div class="shop-cart">
+        <div class="shop-cart-head">
+          <div>
+            <strong>购物车</strong>
+            <span>${cartLines.length ? `${cartLines.reduce((sum, line) => sum + line.quantity, 0)} 件商品 · 原价 ${money(cartBase)}` : "还没有加购商品"}</span>
+          </div>
+          <button class="primary" data-shop-checkout-cart="true" ${cartLines.length ? "" : "disabled"}>结算购物车</button>
+        </div>
+        ${
+          cartLines.length
+            ? cartLines
+                .map(
+                  (line) => `
+                    <div class="shop-cart-row">
+                      <div>
+                        <strong>${escapeHtml(line.name)}</strong>
+                        <span>${escapeHtml(line.tag)} · ${money(line.price)} × ${line.quantity}</span>
+                      </div>
+                      <div class="shop-cart-actions">
+                        <button data-shop-cart-qty="${line.id}" data-shop-cart-delta="-1" aria-label="减少">−</button>
+                        <b>${line.quantity}</b>
+                        <button data-shop-cart-qty="${line.id}" data-shop-cart-delta="1" aria-label="增加">＋</button>
+                        <button data-shop-cart-remove="${line.id}">移除</button>
+                      </div>
+                    </div>
+                  `,
+                )
+                .join("")
+            : `<p class="empty">把想要的商品先加进购物车，再一次性确认扣款。</p>`
+        }
+      </div>
+    </section>
+  `;
+}
+
+function renderShopSpendList() {
+  const items = spendCatalogs.shop || [];
+  const activeTag = state.spendFilters?.shop || "全部";
+  const tags = ["全部", ...Array.from(new Set(items.map((item) => item.tag))).filter(Boolean)];
+  const visibleItems = activeTag === "全部" ? items : items.filter((item) => item.tag === activeTag);
+  return `
+    <div class="spend-filter" aria-label="购物分类筛选">
+      ${tags
+        .map(
+          (tag) => `
+            <button data-spend-filter-category="shop" data-spend-filter-tag="${escapeHtml(tag)}" aria-pressed="${activeTag === tag ? "true" : "false"}">
+              ${escapeHtml(tag)}
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+    <div class="spend-list shop-spend-list">
+      ${visibleItems
+        .map((baseItem) => {
+          const item = catalogItemForCheckout("shop", baseItem);
+          const shop = item.shopBreakdown;
+          const cartable = shopCartEligible(baseItem);
+          return `
+            <article class="spend-item shop-spend-item">
+              <div>
+                <span class="spend-tag">${escapeHtml(baseItem.tag)}</span>
+                <strong>${escapeHtml(baseItem.name)}</strong>
+                <p>${escapeHtml(baseItem.desc)}</p>
+                <small class="checkout-line">${escapeHtml(shop ? `${shop.shippingLabel} · ${shop.eta} · ${shop.summary}` : checkoutLineFor("shop", baseItem))}</small>
+                ${renderSpendFlags(item)}
+              </div>
+              <div class="spend-action">
+                <small>标价 ${money(baseItem.price)}</small>
+                <b>${money(item.price)}</b>
+                <div class="shop-buy-actions">
+                  ${cartable ? `<button data-shop-add-cart="${baseItem.id}">加车</button>` : ""}
+                  <button class="primary" data-spend-category="shop" data-spend-id="${baseItem.id}">购买</button>
+                </div>
+              </div>
+            </article>
+          `;
+        })
+        .join("")}
+      ${visibleItems.length ? "" : `<p class="empty">这个分类下暂时没有可花钱项目。</p>`}
+    </div>
+  `;
+}
+
 function renderFoodApp() {
   return `
     ${appHeader("外卖", "点餐、买菜、跑腿和会员")}
@@ -2812,11 +3225,12 @@ function renderFoodApp() {
 function renderShopApp() {
   const refundableOrders = recordsFor("shop").slice(0, 4);
   return `
-    ${appHeader("购物", "电商下单和物流")}
+    ${appHeader("购物", "购物车、配送、售后和物流")}
     <section class="app-body commerce-body">
       ${renderPaymentSummary()}
+      ${renderShopControlPanel()}
       <h3>今日推荐</h3>
-      ${renderSpendList("shop", "购买")}
+      ${renderShopSpendList()}
       <h3>最近订单</h3>
       ${renderRecordList(recordsFor("shop"), "还没有购物订单。")}
       <h3>售后退款</h3>
@@ -2829,6 +3243,7 @@ function renderShopApp() {
                     <div>
                       <strong>${escapeHtml(order.title)}</strong>
                       <span>${escapeHtml(order.status)} · ${money(order.amount)}</span>
+                      <small class="record-meta">${escapeHtml(order.shopBreakdown?.returnRule || "按平台售后规则扣除服务费后退款")} · 预计退 ${money(Math.max(1, Math.floor(order.amount * (order.shopBreakdown?.refundRate || 0.92))))}</small>
                     </div>
                     <button data-refund-order="${order.id}" ${order.refundStatus ? "disabled" : ""}>${order.refundStatus || "申请退款"}</button>
                   </div>
@@ -3931,6 +4346,16 @@ function recordRedPacket(item, payment, category) {
 }
 
 function openCheckout(category, itemId) {
+  if (category === "shop" && itemId === SHOP_CART_ID) {
+    if (!shopCartLineItems().length) {
+      addNotice("购物车还是空的，先加点想买的东西。");
+      render();
+      return;
+    }
+    state.checkoutDraft = { category, itemId, openedAt: Date.now() };
+    render();
+    return;
+  }
   const item = (spendCatalogs[category] || []).find((entry) => entry.id === itemId);
   if (!item) return;
   state.checkoutDraft = { category, itemId, openedAt: Date.now() };
@@ -3954,7 +4379,8 @@ function confirmCheckout() {
 
 function buyCatalogItem(category, itemId) {
   if (category === "credit") return buyCreditItem(itemId);
-  const baseItem = (spendCatalogs[category] || []).find((entry) => entry.id === itemId);
+  const checkoutWasCart = category === "shop" && itemId === SHOP_CART_ID;
+  const baseItem = checkoutWasCart ? shopCartBaseItem() : (spendCatalogs[category] || []).find((entry) => entry.id === itemId);
   if (!baseItem) return;
   const item = catalogItemForCheckout(category, baseItem);
   if (categoryRequiresNetwork(category) && !hasActivePlan()) {
@@ -4016,11 +4442,16 @@ function buyCatalogItem(category, itemId) {
   } else if (category === "shop") {
     if (item.asset === "subscription") addSubscription(item, payment, category);
     if (item.asset === "policy") addPolicy(item, payment);
+    const shop = item.shopBreakdown;
     postRecord = addOrder(category, item, payment, {
-      status: `${item.status || "订单已提交"} · 物流持续更新但永不签收`,
-      detail: `${item.desc} 真东西永远不会送到你手里。`,
-      tracking: "包裹已离你很近，明天仍然很近",
+      status: `${item.status || "订单已提交"} · ${shop?.shippingLabel || "平台履约"} · ${shop?.eta || "持续更新"}`,
+      detail: shop
+        ? `${baseItem.desc} ${shop.address.label}：${shop.address.address}；${shop.invoice ? "已申请发票" : "未申请发票"}；${shop.freightInsurance ? "含运费险" : "未买运费险"}；${shop.giftWrap ? "礼品包装" : "普通包装"}。${shop.remark ? `备注：${shop.remark}` : ""}`
+        : `${item.desc} 真东西永远不会送到你手里。`,
+      tracking: shop ? `${shop.shippingLabel} · ${shop.promise} · ${shop.returnRule}` : "包裹已离你很近，明天仍然很近",
+      shopBreakdown: shop,
     });
+    if (checkoutWasCart) state.shopCart = [];
   } else if (category === "travel") {
     postRecord = {
       id: makeId(),
@@ -4311,7 +4742,10 @@ function requestRefund(orderId) {
     render();
     return;
   }
-  const refundAmount = Math.max(1, Math.floor(order.amount * 0.92));
+  const refundPlan = order.category === "shop" ? order.shopBreakdown : null;
+  const refundRate = Math.max(0.1, Math.min(1, Number(refundPlan?.refundRate) || 0.92));
+  const refundAmount = Math.max(1, Math.floor(order.amount * refundRate));
+  const refundDeduction = Math.max(0, order.amount - refundAmount);
   const creditRefund = order.cardNumber === "credit";
   const card = creditRefund ? null : cardByNumber(order.cardNumber) || state.cards[0];
   if (!creditRefund && !card) {
@@ -4325,14 +4759,18 @@ function requestRefund(orderId) {
   } else {
     card.balance += refundAmount;
   }
-  order.refundStatus = "退款已退回";
-  order.status = "售后已完成";
+  order.refundStatus = refundPlan ? "售后退款已退回" : "退款已退回";
+  order.status = refundPlan ? `售后已完成 · 扣费 ${money(refundDeduction)}` : "售后已完成";
   state.refunds.unshift({
     id: makeId(),
     orderId: order.id,
     title: `退款：${order.title}`,
     amount: refundAmount,
-    status: creditRefund ? "已恢复信用额度，平台扣除服务费" : "已退回原银行卡，平台扣除服务费",
+    status: refundPlan
+      ? `${creditRefund ? "已恢复信用额度" : "已退回原银行卡"}，${refundPlan.returnRule}，扣除 ${money(refundDeduction)}`
+      : creditRefund
+        ? "已恢复信用额度，平台扣除服务费"
+        : "已退回原银行卡，平台扣除服务费",
     meta: order.meta,
     time: nowTime(),
     createdAt: Date.now(),
@@ -4349,9 +4787,9 @@ function requestRefund(orderId) {
     cardNumber: card?.number || "credit",
     detail: creditRefund ? "恢复信用额度" : "原路退回",
   });
-  addNotice(`${order.title} 已退款 ${money(refundAmount)}`);
+  addNotice(`${order.title} 已退款 ${money(refundAmount)}，扣费 ${money(refundDeduction)}`);
   advanceGameDay("售后退款");
-  scheduleMoneyAftercare("售后客服", "退款回访", `${order.title} 的退款已处理。钱回来了，但消费痕迹还留在手机里。`, { category: "refund", call: true });
+  scheduleMoneyAftercare("售后客服", "退款回访", `${order.title} 的退款已处理，扣除 ${money(refundDeduction)}。钱回来了一部分，消费痕迹还留在手机里。`, { category: "refund", call: true });
   render();
 }
 
@@ -4877,6 +5315,45 @@ el.screen.addEventListener("click", (event) => {
     return payMonthlyCommitments();
   }
 
+  const shopCheckoutCart = event.target.closest("[data-shop-checkout-cart]");
+  if (shopCheckoutCart) {
+    if (!guardTutorialAction("shopCartCheckout", "", event)) return;
+    return openCheckout("shop", SHOP_CART_ID);
+  }
+
+  const shopAddCart = event.target.closest("[data-shop-add-cart]");
+  if (shopAddCart) {
+    if (!guardTutorialAction("shopAddCart", "", event)) return;
+    return addShopCartItem(shopAddCart.dataset.shopAddCart);
+  }
+
+  const shopCartQty = event.target.closest("[data-shop-cart-qty]");
+  if (shopCartQty) {
+    if (!guardTutorialAction("shopCartQty", "", event)) return;
+    return updateShopCartQuantity(shopCartQty.dataset.shopCartQty, Math.floor(Number(shopCartQty.dataset.shopCartDelta) || 0));
+  }
+
+  const shopCartRemove = event.target.closest("[data-shop-cart-remove]");
+  if (shopCartRemove) {
+    if (!guardTutorialAction("shopCartRemove", "", event)) return;
+    return removeShopCartItem(shopCartRemove.dataset.shopCartRemove);
+  }
+
+  const shopOption = event.target.closest("[data-shop-option]");
+  if (shopOption) {
+    if (!guardTutorialAction("shopOption", "", event)) return;
+    updateShopDraft({ [shopOption.dataset.shopOption]: shopOption.dataset.shopValue || "" });
+    return render();
+  }
+
+  const shopToggle = event.target.closest("[data-shop-toggle]");
+  if (shopToggle) {
+    if (!guardTutorialAction("shopToggle", "", event)) return;
+    const key = shopToggle.dataset.shopToggle;
+    updateShopDraft({ [key]: !currentShopDraft()[key] });
+    return render();
+  }
+
   const foodOption = event.target.closest("[data-food-option]");
   if (foodOption) {
     if (!guardTutorialAction("foodOption", "", event)) return;
@@ -4972,6 +5449,7 @@ el.screen.addEventListener("input", (event) => {
   if (event.target.matches("[data-card-number], [data-transfer-amount]")) updateBankDraft();
   if (event.target.matches("[data-person-contact], [data-person-amount], [data-person-note]")) updatePersonTransferDraft();
   if (event.target.matches("[data-food-note]")) updateFoodDraft({ note: event.target.value });
+  if (event.target.matches("[data-shop-remark]")) updateShopDraft({ remark: event.target.value });
   if (event.target.matches("[data-sms-to]")) state.smsDraft.to = event.target.value;
   if (event.target.matches("[data-sms-text]")) state.smsDraft.text = event.target.value;
   saveState();
