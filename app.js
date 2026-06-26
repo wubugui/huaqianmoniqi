@@ -560,6 +560,8 @@ const defaultState = {
 let state = loadState();
 let callTimer = 0;
 let tutorialHangupTimer = 0;
+let renderedAppId = state.activeApp || "home";
+const scrollMemory = new Map();
 const cashSwipe = {
   active: false,
   committed: false,
@@ -641,6 +643,36 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function scrollKeyFor(element, appId) {
+  if (element.classList.contains("home-wallpaper")) return "home:body";
+  if (element.classList.contains("checkout-scroll")) return `${appId}:checkout`;
+  if (element.classList.contains("spend-filter")) return `${appId}:spend-filter:${element.getAttribute("aria-label") || ""}`;
+  if (element.classList.contains("app-body")) return `${appId}:body`;
+  return "";
+}
+
+function captureScrollPositions(appId = renderedAppId) {
+  if (!el.screen) return;
+  el.screen.querySelectorAll(".home-wallpaper, .app-body, .checkout-scroll, .spend-filter").forEach((element) => {
+    const key = scrollKeyFor(element, appId);
+    if (!key) return;
+    scrollMemory.set(key, { left: element.scrollLeft, top: element.scrollTop });
+  });
+}
+
+function restoreScrollPositions(appId = state.activeApp) {
+  const restore = () => {
+    el.screen.querySelectorAll(".home-wallpaper, .app-body, .checkout-scroll, .spend-filter").forEach((element) => {
+      const saved = scrollMemory.get(scrollKeyFor(element, appId));
+      if (!saved) return;
+      element.scrollTop = Math.min(saved.top, Math.max(0, element.scrollHeight - element.clientHeight));
+      element.scrollLeft = Math.min(saved.left, Math.max(0, element.scrollWidth - element.clientWidth));
+    });
+  };
+  restore();
+  window.requestAnimationFrame(restore);
 }
 
 function nowTime() {
@@ -1173,6 +1205,7 @@ function appHeader(title, subtitle = "") {
 }
 
 function render() {
+  captureScrollPositions(renderedAppId);
   normalizeTutorialProgress();
   if (state.activeApp !== "home" && !canUseApp(state.activeApp)) state.activeApp = state.installed.includes("carrier") ? "carrier" : "store";
   const activeTutorial = tutorialActive();
@@ -1227,8 +1260,11 @@ function render() {
   };
 
   el.screen.innerHTML = `${(views[state.activeApp] || renderHome)()}${renderCheckoutSheet()}${renderTutorialOverlay()}`;
+  renderedAppId = state.activeApp;
+  restoreScrollPositions(renderedAppId);
   syncTutorialChrome();
   syncTutorialScroll();
+  if (tutorialActive()) window.requestAnimationFrame(syncTutorialScroll);
   saveState();
 }
 
@@ -2732,8 +2768,28 @@ function syncTutorialChrome() {
   if (tutorialIsTarget("open", "store") && state.activeApp !== "home") el.taskButton.classList.add("tutorial-target");
 }
 
+function scrollTargetIntoView(target) {
+  const scroller = target.closest(".app-body, .home-wallpaper, .checkout-scroll");
+  if (!scroller) {
+    target.scrollIntoView({ block: "center", inline: "nearest" });
+    return;
+  }
+  const targetRect = target.getBoundingClientRect();
+  const scrollerRect = scroller.getBoundingClientRect();
+  const targetCenter = targetRect.top + targetRect.height / 2;
+  const scrollerCenter = scrollerRect.top + scrollerRect.height / 2;
+  scroller.scrollTop += targetCenter - scrollerCenter;
+  scroller.scrollLeft += Math.max(0, targetRect.right - scrollerRect.right + 12);
+  scroller.scrollLeft -= Math.max(0, scrollerRect.left - targetRect.left + 12);
+}
+
 function syncTutorialScroll() {
   if (!tutorialActive()) return;
+  const target = el.screen.querySelector(".tutorial-target");
+  if (target) {
+    scrollTargetIntoView(target);
+    return;
+  }
   if (!["pasteCard", "transfer"].includes(currentTutorialStep())) return;
   const body = el.screen.querySelector(".bank-body");
   if (body) body.scrollTop = body.scrollHeight;

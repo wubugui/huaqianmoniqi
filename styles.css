@@ -16,9 +16,14 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 12% 18%, rgba(255, 217, 90, 0.45) 0 10px, transparent 11px),
     radial-gradient(circle at 80% 14%, rgba(22, 119, 255, 0.22) 0 14px, transparent 15px),
@@ -28,6 +33,7 @@ body {
   background-size: auto, auto, 32px 32px, 32px 32px;
   color: var(--ink);
   font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  overflow: hidden;
 }
 
 button,
@@ -52,6 +58,7 @@ button:disabled {
   display: flex;
   justify-content: center;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 18px;
 }
 
@@ -63,6 +70,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   height: min(820px, calc(100vh - 36px));
+  height: min(820px, calc(100dvh - 36px));
   overflow: hidden;
   padding: 12px;
   width: min(430px, calc(100vw - 24px));
@@ -230,7 +238,10 @@ button:disabled {
   height: 100%;
   min-height: 0;
   overflow: auto;
-  padding: 22px 18px;
+  overscroll-behavior: contain;
+  padding: 22px 18px calc(96px + env(safe-area-inset-bottom));
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .home-top {
@@ -383,11 +394,14 @@ button:disabled {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 14px;
+  overscroll-behavior: contain;
+  padding: 14px 14px calc(96px + env(safe-area-inset-bottom));
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .bank-body {
-  padding: 10px;
+  padding: 10px 10px calc(96px + env(safe-area-inset-bottom));
 }
 
 .bank-body h3 {
@@ -448,9 +462,12 @@ button:disabled {
   flex-direction: column;
   gap: 14px;
   justify-content: center;
+  min-height: 0;
+  overflow: auto;
   padding: 18px;
   text-align: center;
   touch-action: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .cash-total {
@@ -937,7 +954,7 @@ textarea {
 }
 
 .commerce-body {
-  padding: 12px;
+  padding: 12px 12px calc(96px + env(safe-area-inset-bottom));
 }
 
 .commerce-body h3 {
@@ -998,8 +1015,11 @@ textarea {
   display: flex;
   gap: 7px;
   margin: 0 0 9px;
+  overscroll-behavior-x: contain;
   overflow-x: auto;
   padding-bottom: 2px;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .spend-filter button {
@@ -1117,7 +1137,7 @@ textarea {
   display: flex;
   inset: 0;
   isolation: isolate;
-  padding: 12px;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
   position: absolute;
   z-index: 60;
 }
@@ -1149,7 +1169,10 @@ textarea {
   gap: 10px;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   padding-right: 2px;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .checkout-head {
@@ -1557,6 +1580,7 @@ textarea {
     border-width: 0;
     box-shadow: none;
     height: 100vh;
+    height: 100dvh;
     padding: 0;
     width: 100vw;
   }
@@ -1567,7 +1591,24 @@ textarea {
 
   .system-nav {
     background: #111;
-    padding-bottom: 8px;
+    flex: 0 0 auto;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .app-body {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  .bank-body {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  .commerce-body {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  .home-wallpaper {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
   }
 
   .spend-item {
