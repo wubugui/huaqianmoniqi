@@ -1,0 +1,15 @@
+{
+  "name": "mini-legend",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "玛法余烬 · 沙城纪元 — 浏览器端复古 2D 动作角色扮演游戏",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "serve": "python3 -m http.server 8080",
+    "build": "node scripts/build.mjs",
+    "test": "node tests/game.test.mjs && node tests/sim.test.mjs && node tests/progression.test.mjs && node tests/anim.test.mjs",
+    "process-assets": ".venv/bin/python scripts/process_assets.py",
+    "anim:from-video": ".venv/bin/python scripts/video_to_frames.py --all --fps 10"
+  }
+}

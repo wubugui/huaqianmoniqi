@@ -1,0 +1,194 @@
+{
+  "units": {
+    "warrior": "assets/game/unit/warrior.png",
+    "wizard": "assets/game/unit/wizard.png",
+    "taoist": "assets/game/unit/taoist.png"
+  },
+  "mobs": {
+    "deer": "assets/game/mob/deer.png",
+    "zombie": "assets/game/mob/zombie.png",
+    "skeleton": "assets/game/mob/skeleton.png",
+    "orc": "assets/game/mob/orc.png",
+    "bat": "assets/game/mob/bat.png",
+    "guardian": "assets/game/mob/guardian.png"
+  },
+  "npc": {
+    "healer": "assets/game/npc/healer.png",
+    "merchant": "assets/game/npc/merchant.png",
+    "warehouse": "assets/game/npc/warehouse.png"
+  },
+  "maps": {
+    "town": "assets/game/map/town.jpg",
+    "field": "assets/game/map/field.jpg",
+    "temple": "assets/game/map/temple.jpg"
+  },
+  "anim": {
+    "warrior": {
+      "idle": [
+        "assets/game/anim/warrior/idle/00.png",
+        "assets/game/anim/warrior/idle/01.png",
+        "assets/game/anim/warrior/idle/02.png",
+        "assets/game/anim/warrior/idle/03.png",
+        "assets/game/anim/warrior/idle/04.png",
+        "assets/game/anim/warrior/idle/05.png"
+      ],
+      "walk": [
+        "assets/game/anim/warrior/walk/00.png",
+        "assets/game/anim/warrior/walk/01.png",
+        "assets/game/anim/warrior/walk/02.png",
+        "assets/game/anim/warrior/walk/03.png",
+        "assets/game/anim/warrior/walk/04.png",
+        "assets/game/anim/warrior/walk/05.png",
+        "assets/game/anim/warrior/walk/06.png",
+        "assets/game/anim/warrior/walk/07.png",
+        "assets/game/anim/warrior/walk/08.png",
+        "assets/game/anim/warrior/walk/09.png"
+      ],
+      "run": [
+        "assets/game/anim/warrior/run/00.png",
+        "assets/game/anim/warrior/run/01.png",
+        "assets/game/anim/warrior/run/02.png",
+        "assets/game/anim/warrior/run/03.png",
+        "assets/game/anim/warrior/run/04.png",
+        "assets/game/anim/warrior/run/05.png",
+        "assets/game/anim/warrior/run/06.png",
+        "assets/game/anim/warrior/run/07.png",
+        "assets/game/anim/warrior/run/08.png",
+        "assets/game/anim/warrior/run/09.png"
+      ],
+      "jump": [
+        "assets/game/anim/warrior/jump/00.png",
+        "assets/game/anim/warrior/jump/01.png",
+        "assets/game/anim/warrior/jump/02.png",
+        "assets/game/anim/warrior/jump/03.png",
+        "assets/game/anim/warrior/jump/04.png",
+        "assets/game/anim/warrior/jump/05.png"
+      ],
+      "attack": [
+        "assets/game/anim/warrior/attack/00.png",
+        "assets/game/anim/warrior/attack/01.png",
+        "assets/game/anim/warrior/attack/02.png",
+        "assets/game/anim/warrior/attack/03.png",
+        "assets/game/anim/warrior/attack/04.png",
+        "assets/game/anim/warrior/attack/05.png"
+      ]
+    },
+    "wizard": {
+      "idle": [
+        "assets/game/anim/wizard/idle/00.png",
+        "assets/game/anim/wizard/idle/01.png",
+        "assets/game/anim/wizard/idle/02.png",
+        "assets/game/anim/wizard/idle/03.png",
+        "assets/game/anim/wizard/idle/04.png",
+        "assets/game/anim/wizard/idle/05.png"
+      ],
+      "walk": [
+        "assets/game/anim/wizard/walk/00.png",
+        "assets/game/anim/wizard/walk/01.png",
+        "assets/game/anim/wizard/walk/02.png",
+        "assets/game/anim/wizard/walk/03.png",
+        "assets/game/anim/wizard/walk/04.png",
+        "assets/game/anim/wizard/walk/05.png",
+        "assets/game/anim/wizard/walk/06.png",
+        "assets/game/anim/wizard/walk/07.png",
+        "assets/game/anim/wizard/walk/08.png",
+        "assets/game/anim/wizard/walk/09.png"
+      ],
+      "run": [
+        "assets/game/anim/wizard/run/00.png",
+        "assets/game/anim/wizard/run/01.png",
+        "assets/game/anim/wizard/run/02.png",
+        "assets/game/anim/wizard/run/03.png",
+        "assets/game/anim/wizard/run/04.png",
+        "assets/game/anim/wizard/run/05.png",
+        "assets/game/anim/wizard/run/06.png",
+        "assets/game/anim/wizard/run/07.png",
+        "assets/game/anim/wizard/run/08.png",
+        "assets/game/anim/wizard/run/09.png"
+      ],
+      "jump": [
+        "assets/game/anim/wizard/jump/00.png",
+        "assets/game/anim/wizard/jump/01.png",
+        "assets/game/anim/wizard/jump/02.png",
+        "assets/game/anim/wizard/jump/03.png",
+        "assets/game/anim/wizard/jump/04.png",
+        "assets/game/anim/wizard/jump/05.png"
+      ],
+      "attack": [
+        "assets/game/anim/wizard/attack/00.png",
+        "assets/game/anim/wizard/attack/01.png",
+        "assets/game/anim/wizard/attack/02.png",
+        "assets/game/anim/wizard/attack/03.png",
+        "assets/game/anim/wizard/attack/04.png",
+        "assets/game/anim/wizard/attack/05.png"
+      ]
+    },
+    "taoist": {
+      "idle": [
+        "assets/game/anim/taoist/idle/00.png",
+        "assets/game/anim/taoist/idle/01.png",
+        "assets/game/anim/taoist/idle/02.png",
+        "assets/game/anim/taoist/idle/03.png",
+        "assets/game/anim/taoist/idle/04.png",
+        "assets/game/anim/taoist/idle/05.png"
+      ],
+      "walk": [
+        "assets/game/anim/taoist/walk/00.png",
+        "assets/game/anim/taoist/walk/01.png",
+        "assets/game/anim/taoist/walk/02.png",
+        "assets/game/anim/taoist/walk/03.png",
+        "assets/game/anim/taoist/walk/04.png",
+        "assets/game/anim/taoist/walk/05.png",
+        "assets/game/anim/taoist/walk/06.png",
+        "assets/game/anim/taoist/walk/07.png",
+        "assets/game/anim/taoist/walk/08.png",
+        "assets/game/anim/taoist/walk/09.png"
+      ],
+      "run": [
+        "assets/game/anim/taoist/run/00.png",
+        "assets/game/anim/taoist/run/01.png",
+        "assets/game/anim/taoist/run/02.png",
+        "assets/game/anim/taoist/run/03.png",
+        "assets/game/anim/taoist/run/04.png",
+        "assets/game/anim/taoist/run/05.png",
+        "assets/game/anim/taoist/run/06.png",
+        "assets/game/anim/taoist/run/07.png",
+        "assets/game/anim/taoist/run/08.png",
+        "assets/game/anim/taoist/run/09.png"
+      ],
+      "jump": [
+        "assets/game/anim/taoist/jump/00.png",
+        "assets/game/anim/taoist/jump/01.png",
+        "assets/game/anim/taoist/jump/02.png",
+        "assets/game/anim/taoist/jump/03.png",
+        "assets/game/anim/taoist/jump/04.png",
+        "assets/game/anim/taoist/jump/05.png"
+      ],
+      "attack": [
+        "assets/game/anim/taoist/attack/00.png",
+        "assets/game/anim/taoist/attack/01.png",
+        "assets/game/anim/taoist/attack/02.png",
+        "assets/game/anim/taoist/attack/03.png",
+        "assets/game/anim/taoist/attack/04.png",
+        "assets/game/anim/taoist/attack/05.png"
+      ]
+    }
+  },
+  "videos": {
+    "warrior/idle": "assets/generated/videos/warrior_idle.mp4",
+    "warrior/walk": "assets/generated/videos/warrior_walk.mp4",
+    "warrior/run": "assets/generated/videos/warrior_run.mp4",
+    "warrior/jump": "assets/generated/videos/warrior_jump.mp4",
+    "warrior/attack": "assets/generated/videos/warrior_attack.mp4",
+    "wizard/idle": "assets/generated/videos/wizard_idle.mp4",
+    "wizard/walk": "assets/generated/videos/wizard_walk.mp4",
+    "wizard/run": "assets/generated/videos/wizard_run.mp4",
+    "wizard/jump": "assets/generated/videos/wizard_jump.mp4",
+    "wizard/attack": "assets/generated/videos/wizard_attack.mp4",
+    "taoist/idle": "assets/generated/videos/taoist_idle.mp4",
+    "taoist/walk": "assets/generated/videos/taoist_walk.mp4",
+    "taoist/run": "assets/generated/videos/taoist_run.mp4",
+    "taoist/jump": "assets/generated/videos/taoist_jump.mp4",
+    "taoist/attack": "assets/generated/videos/taoist_attack.mp4"
+  }
+}

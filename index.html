@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#100b08" />
+  <meta name="description" content="玛法余烬：三职业、自由打宝、装备强化与沃玛教主挑战的复古 2D 动作角色扮演游戏。" />
+  <title>玛法余烬 · 沙城纪元</title>
+  <link rel="preload" as="image" href="assets/game/ui/title-cover.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <section id="screen-menu" class="screen active" aria-label="游戏主菜单">
+      <div class="menu-bg" aria-hidden="true"></div>
+      <div class="menu-vignette" aria-hidden="true"></div>
+      <main class="menu-panel">
+        <div class="menu-logo">
+          <span class="eyebrow">原创复古动作角色扮演</span>
+          <h1>玛法余烬</h1>
+          <p>沙城纪元</p>
+        </div>
+        <div class="menu-actions">
+          <button id="btn-start" class="btn primary large">踏入玛法</button>
+          <button id="btn-continue" class="btn secondary large hidden">继续征程</button>
+        </div>
+        <p id="load-status" class="load-status"><span></span>正在整备玛法大陆…</p>
+        <div class="menu-features" aria-label="游戏特色">
+          <span>三职业分化</span><i></i><span>自由打宝</span><i></i><span>部位强化</span><i></i><span>五大区域</span>
+        </div>
+      </main>
+      <button id="btn-menu-help" class="corner-btn">玩法说明</button>
+      <span class="version">EMBER BUILD 0.3</span>
+    </section>
+
+    <section id="screen-pick" class="screen">
+      <div class="pick-backdrop"></div>
+      <main class="pick-wrap">
+        <header class="pick-head">
+          <div><span class="eyebrow">CREATE YOUR HERO</span><h2>选择你的道路</h2></div>
+          <button id="btn-back" class="btn ghost">返回</button>
+        </header>
+        <div id="class-grid" class="class-grid"></div>
+        <div class="pick-bar frame">
+          <div id="pick-info" class="pick-info">选择一个职业，查看成长方向与技能。</div>
+          <div class="pick-actions">
+            <label for="player-name">角色名</label>
+            <input id="player-name" maxlength="8" autocomplete="off" value="无名旅人" />
+            <button id="btn-enter" class="btn primary" disabled>进入玛法大陆</button>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <section id="screen-game" class="screen" aria-label="游戏场景">
+      <canvas id="game-canvas"></canvas>
+      <div id="hud">
+        <div class="top-status">
+          <div class="map-name" id="map-name">比奇城</div>
+          <div id="safe-label" class="safe-label">安全区</div>
+          <div id="clock-label" class="clock-label">玛法历 001</div>
+        </div>
+        <div class="hint" id="sys-hint" role="status"></div>
+        <div id="boss-hud" class="boss-hud hidden">
+          <div class="boss-meta"><span id="boss-name">沃玛教主</span><span id="boss-phase">常态</span></div>
+          <div class="boss-track"><div id="boss-hp"></div></div>
+        </div>
+        <div id="combo-hud" class="combo-hud hidden"><strong id="combo-count">3</strong><span>连斩</span></div>
+
+        <aside id="quest-panel" class="panel quest hit">
+          <div class="panel-head compact">
+            <div><span class="panel-kicker">当前追踪</span><h3>主线任务</h3></div>
+            <button id="btn-quest-toggle" class="icon-btn" aria-label="收起任务">−</button>
+          </div>
+          <div id="quest-body" class="quest-body"></div>
+        </aside>
+
+        <aside id="combat-log" class="combat-log hit" aria-label="战斗记录"></aside>
+
+        <div class="bottom-hud hit">
+          <button id="btn-character" class="portrait-box" aria-label="角色信息">
+            <img id="hud-portrait" alt="" />
+            <span class="lv" id="hud-lv">1</span>
+          </button>
+          <div class="vitals">
+            <div class="name-line">
+              <strong id="hud-name">—</strong>
+              <span id="hud-class"></span>
+              <span id="hud-power" class="power">战力 0</span>
+              <span id="hud-gold" class="gold">0</span>
+            </div>
+            <div class="bar hp"><div id="bar-hp"></div><span id="txt-hp"></span></div>
+            <div class="bar mp"><div id="bar-mp"></div><span id="txt-mp"></span></div>
+            <div class="bar xp"><div id="bar-xp"></div><span id="txt-xp"></span></div>
+          </div>
+          <div class="skills" id="skill-bar" aria-label="技能栏"></div>
+          <div class="quick">
+            <button id="btn-potion-hp" class="quick-item potion-hp"><span>F1</span><b id="hp-pot-count">0</b></button>
+            <button id="btn-potion-mp" class="quick-item potion-mp"><span>F2</span><b id="mp-pot-count">0</b></button>
+            <button id="btn-town" class="quick-item scroll"><span>V</span><b id="scroll-count">0</b></button>
+          </div>
+          <nav class="system-nav">
+            <button id="btn-bag">背包<kbd>B</kbd></button>
+            <button id="btn-char">角色<kbd>C</kbd></button>
+            <button id="btn-achievements">成就<kbd>Y</kbd></button>
+            <button id="btn-settings">设置<kbd>Esc</kbd></button>
+          </nav>
+        </div>
+
+        <section id="bag" class="panel window bag hit hidden" aria-label="背包">
+          <div class="panel-head">
+            <div><span class="panel-kicker">INVENTORY</span><h3>行囊与装备</h3></div>
+            <button id="btn-bag-close" class="icon-btn" aria-label="关闭">×</button>
+          </div>
+          <div class="equip-row" id="equip-slots"></div>
+          <div id="bag-detail" class="item-detail"><span>选择物品查看详情</span></div>
+          <div class="bag-grid" id="bag-grid"></div>
+          <div class="bag-foot">
+            <span id="bag-cap"></span>
+            <div>
+              <button id="btn-deposit" class="btn tiny">存入仓库</button>
+              <button id="btn-sell" class="btn tiny danger">出售选中</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="character" class="panel window character hit hidden" aria-label="角色信息">
+          <div class="panel-head">
+            <div><span class="panel-kicker">CHARACTER</span><h3>角色与锻造</h3></div>
+            <button id="btn-char-close" class="icon-btn" aria-label="关闭">×</button>
+          </div>
+          <div class="character-hero">
+            <img id="char-art" alt="" />
+            <div><h4 id="char-name">—</h4><p id="char-title">—</p><strong id="char-power">战力 0</strong></div>
+          </div>
+          <div id="stat-grid" class="stat-grid"></div>
+          <div class="forge-head"><h4>部位强化</h4><span>比奇城内可用 · +7 以上失败会降级</span></div>
+          <div id="forge-list" class="forge-list"></div>
+        </section>
+
+        <section id="achievements" class="panel window achievements hit hidden" aria-label="成就">
+          <div class="panel-head">
+            <div><span class="panel-kicker">CHRONICLE</span><h3>玛法纪事</h3></div>
+            <button id="btn-ach-close" class="icon-btn" aria-label="关闭">×</button>
+          </div>
+          <div id="achievement-summary" class="achievement-summary"></div>
+          <div id="achievement-list" class="achievement-list"></div>
+        </section>
+
+        <section id="shop" class="panel window shop hit hidden" aria-label="商店">
+          <div class="panel-head">
+            <div><span class="panel-kicker">MERCHANT</span><h3 id="shop-title">比奇杂货铺</h3></div>
+            <button id="btn-shop-close" class="icon-btn" aria-label="关闭">×</button>
+          </div>
+          <div id="shop-list" class="shop-list"></div>
+        </section>
+
+        <section id="warehouse" class="panel window warehouse hit hidden" aria-label="仓库">
+          <div class="panel-head">
+            <div><span class="panel-kicker">STORAGE</span><h3>仓库</h3></div>
+            <button id="btn-wh-close" class="icon-btn" aria-label="关闭">×</button>
+          </div>
+          <div id="wh-list" class="shop-list"></div>
+        </section>
+
+        <section id="settings" class="panel modal hit hidden" aria-label="设置与帮助">
+          <div class="panel-head">
+            <div><span class="panel-kicker">SYSTEM</span><h3>设置与玩法</h3></div>
+            <button id="btn-settings-close" class="icon-btn" aria-label="关闭">×</button>
+          </div>
+          <div class="setting-row"><span>战斗音效</span><button id="btn-sound" class="toggle">开启</button></div>
+          <div class="setting-row"><span>全屏显示</span><button id="btn-fullscreen" class="btn tiny">切换全屏</button></div>
+          <div class="help-grid">
+            <div><kbd>鼠标 / 触屏</kbd><span>移动、锁定怪物、与 NPC 交互</span></div>
+            <div><kbd>W A S D</kbd><span>自由移动，Shift 加速奔跑</span></div>
+            <div><kbd>1 — 4</kbd><span>释放职业技能</span></div>
+            <div><kbd>F1 / F2</kbd><span>使用生命 / 魔法药</span></div>
+            <div><kbd>空格</kbd><span>短跳规避 Boss 法阵</span></div>
+            <div><kbd>B C Y Q</kbd><span>背包、角色、成就、任务</span></div>
+          </div>
+          <button id="btn-save" class="btn primary wide">立即保存进度</button>
+        </section>
+
+        <section id="death" class="panel modal death hit hidden" aria-label="角色阵亡">
+          <span class="death-mark">☠</span>
+          <h3>灵魂暂离躯壳</h3>
+          <p>损失本级 10% 经验，将在比奇城复活。</p>
+          <button id="btn-revive" class="btn primary large">重返玛法</button>
+        </section>
+
+        <div id="achievement-toast" class="achievement-toast hidden">
+          <span>成就解锁</span><strong id="achievement-toast-name">初战告捷</strong>
+        </div>
+
+        <div id="mobile-controls" class="mobile-controls hit">
+          <div id="joystick" class="joystick"><div id="joystick-knob"></div></div>
+          <div class="mobile-actions">
+            <button data-skill="2">3</button>
+            <button data-skill="1">2</button>
+            <button data-skill="0" class="attack">1</button>
+            <button id="mobile-jump">跃</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
