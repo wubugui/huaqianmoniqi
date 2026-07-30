@@ -1,4 +1,4 @@
-import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.13';
+import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.17';
 import {
   ACHIEVEMENTS, BOUNTIES, ENHANCE_MAX, EQUIP_SLOTS, ITEM_TYPE_NAMES, MAPS, MONSTERS, RARITIES, SKILL_LEVEL_XP, SKILL_MAX_LEVEL,
   SLOT_NAMES, WORLD, enhanceCost,
@@ -6,7 +6,7 @@ import {
 import { hasSave, loadGame, clearSave } from './save.js';
 import { SoundSystem } from './audio.js?v=0.9.13';
 import { MultiplayerClient } from './network.js?v=0.9.10';
-import { WORLD_MAP_LAYOUT, directionLabel, distanceInTiles, findWorldRoute, portalForLeg } from './navigation.js?v=0.9.12';
+import { WORLD_MAP_LAYOUT, directionLabel, distanceInTiles, findWorldRoute, portalForLeg } from './navigation.js?v=0.9.17';
 
 const $ = (selector) => document.querySelector(selector);
 const screens = { menu: $('#screen-menu'), pick: $('#screen-pick'), game: $('#screen-game') };
@@ -279,7 +279,7 @@ function syncWorldRouteTracker() {
     return;
   }
   const route = findWorldRoute(game.mapId, activeWorldDestination);
-  if (route.length <= 1) {
+  if (route.length === 1) {
     const destinationName = MAPS[activeWorldDestination].name;
     activeWorldDestination = null;
     routeLegFrom = null;
@@ -288,16 +288,28 @@ function syncWorldRouteTracker() {
     hint(`已抵达 ${destinationName}`);
     return;
   }
+  if (route.length < 1) {
+    $('#route-title').textContent = `前往 ${MAPS[activeWorldDestination].name}`;
+    $('#route-step').textContent = '当前无法规划跨图路线';
+    const nextButton = $('#btn-route-next');
+    nextButton.textContent = '重试';
+    nextButton.disabled = false;
+    tracker.classList.remove('hidden');
+    return;
+  }
   const nextMapId = route[1];
-  const livePortal = game.portals.find((portal) => portal.to === nextMapId);
-  const navigating = routeLegFrom === game.mapId
+  const transitioning = !!(game.portalLoading || game.awaitingMapAck);
+  const navigating = !transitioning
+    && routeLegFrom === game.mapId
     && routeLegTo === nextMapId
-    && game.pendingPortal === livePortal;
+    && game.pendingPortal?.to === nextMapId;
   $('#route-title').textContent = `前往 ${MAPS[activeWorldDestination].name}`;
-  $('#route-step').textContent = `${game.map.name} → ${MAPS[nextMapId].name} · 剩余 ${route.length - 1} 段`;
+  $('#route-step').textContent = transitioning
+    ? `${game.map.name} → ${MAPS[nextMapId].name} · 传送中…`
+    : `${game.map.name} → ${MAPS[nextMapId].name} · 剩余 ${route.length - 1} 段`;
   const nextButton = $('#btn-route-next');
-  nextButton.textContent = navigating ? '寻路中' : '继续';
-  nextButton.disabled = navigating;
+  nextButton.textContent = transitioning ? '传送中' : navigating ? '寻路中' : '继续';
+  nextButton.disabled = transitioning || navigating;
   tracker.classList.remove('hidden');
 }
 
@@ -351,14 +363,23 @@ function handleRouteMapChange() {
   routeLegTo = null;
   if (isOpen('world-map')) syncWorldMap();
   syncWorldRouteTracker();
-  if (!activeWorldDestination || activeWorldDestination === game.mapId) return;
+  if (!activeWorldDestination || activeWorldDestination === game.mapId) {
+    if (activeWorldDestination === game.mapId) syncWorldRouteTracker();
+    return;
+  }
+  if (game.portalLoading || game.awaitingMapAck) return;
   const mapAtArrival = game.mapId;
   window.clearTimeout(routeContinueTimer);
   routeContinueTimer = window.setTimeout(() => {
-    if (game?.mapId === mapAtArrival && activeWorldDestination) {
+    if (
+      game?.mapId === mapAtArrival
+      && activeWorldDestination
+      && !game.portalLoading
+      && !game.awaitingMapAck
+    ) {
       startWorldNavigation(activeWorldDestination, { silent: true });
     }
-  }, 650);
+  }, 280);
 }
 
 async function boot() {
@@ -664,10 +685,12 @@ function bootGame(options) {
       if (game) game.multiplayerActive = connected;
     },
   });
+  game.onRequestMapChange = (mapId) => network?.changeMap(mapId);
   game.onMapChange = (mapId) => {
-    network?.changeMap(mapId);
     syncRegionAudio(mapId);
+    handleRouteMapChange();
   };
+  lastRouteMapId = game.mapId;
   syncRegionAudio(game.mapId);
   network.connect({
     characterId: game.player.characterId,
@@ -841,10 +864,15 @@ function loop(now) {
       }
     }
     lastObservedHp = game.player.hp;
-    network?.syncPlayer(game.player, game.mapId, now);
+    // Do not publish a post-portal mapId/position until the server has acked
+    // the transition; otherwise move frames are rejected and the route stalls.
+    if (!game.portalLoading && !game.awaitingMapAck) {
+      network?.syncPlayer(game.player, game.mapId, now);
+    }
     game.render();
     syncHud();
     handleRouteMapChange();
+    if (activeWorldDestination) syncWorldRouteTracker();
     if (now - lastPanelSync > 300) {
       lastPanelSync = now;
       if (isOpen('character')) syncCharacter();

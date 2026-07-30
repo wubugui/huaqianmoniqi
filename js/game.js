@@ -65,6 +65,7 @@ export class Game {
     this.pendingDrop = null;
     this.pendingPortal = null;
     this.portalLoading = null;
+    this.awaitingMapAck = null;
     this.navigationPath = [];
     this.pendingGather = null;
     this.gathering = null;
@@ -74,6 +75,7 @@ export class Game {
     this.networkPets = [];
     this.networkPlayerId = null;
     this.onMapChange = opts.onMapChange || null;
+    this.onRequestMapChange = opts.onRequestMapChange || null;
     this.onRemoteSelected = opts.onRemoteSelected || null;
     this.onRemoteAttack = opts.onRemoteAttack || null;
     this.onNetworkMonsterAttack = opts.onNetworkMonsterAttack || null;
@@ -409,10 +411,22 @@ export class Game {
     this.networkPlayerId = ownId;
     const own = snapshot.players.find((entry) => entry.id === ownId);
     if (own) {
+      const transitioningTo = this.awaitingMapAck || this.portalLoading;
       if (own.mapId !== this.mapId && MAPS[own.mapId]) {
-        this.loadMap(own.mapId, own.x / T, own.y / T, { authoritative: true });
+        // While a portal ack is in flight, ignore stale snapshots that still
+        // report the previous map — otherwise the client gets yanked back and
+        // world-route continuation dies.
+        if (transitioningTo && own.mapId !== transitioningTo) {
+          // keep waiting for the authoritative map ack / next snapshot
+        } else {
+          this.loadMap(own.mapId, own.x / T, own.y / T, { authoritative: true });
+          if (this.awaitingMapAck && own.mapId === this.awaitingMapAck) {
+            this.awaitingMapAck = null;
+          }
+        }
       } else if (
         own.mapId === this.mapId
+        && !transitioningTo
         && (dist(this.player, own) > 140 || this.blocked(this.player.x, this.player.y))
       ) {
         this.player.x = own.x;
@@ -2459,34 +2473,72 @@ export class Game {
     return true;
   }
 
+  enterMapLocally(mapId, tx, ty) {
+    this.portalLoading = mapId;
+    this.zoneFadeT = Math.max(this.zoneFadeT, 0.42);
+    this.onHint?.(`正在进入 ${MAPS[mapId]?.name || mapId}…`);
+    const loading = this.assets.ensureMap?.(mapId);
+    const apply = () => {
+      if (this.mapId !== mapId) this.loadMap(mapId, tx, ty);
+      if (this.portalLoading === mapId) this.portalLoading = null;
+    };
+    if (loading?.then) {
+      return Promise.resolve(loading)
+        .then(apply)
+        .catch((error) => {
+          console.error(error);
+          if (this.portalLoading === mapId) this.portalLoading = null;
+          this.onHint?.('区域战斗资源载入失败，请重试');
+          throw error;
+        });
+    }
+    apply();
+    return Promise.resolve();
+  }
+
   usePortal(portal) {
     const p = this.player;
-    if (this.portalLoading) return false;
+    if (this.portalLoading || this.awaitingMapAck) return false;
     if (portal.reqLevel && p.level < portal.reqLevel) {
       this.onHint?.(`需要 ${portal.reqLevel} 级才能进入 ${portal.label}`);
       return false;
     }
     this.pendingPortal = null;
+    this.navigationPath = [];
     p.moveGoal = null;
-    const loading = this.assets.ensureMap?.(portal.to);
-    if (loading?.then) {
-      this.portalLoading = portal.to;
+
+    // Authoritative multiplayer: ack the portal on the server BEFORE swapping
+    // the local map. Optimistic loadMap was racing SSE snapshots and snapping
+    // the player back to the previous map mid-route.
+    if (this.multiplayerActive && this.onRequestMapChange) {
+      this.awaitingMapAck = portal.to;
       this.zoneFadeT = Math.max(this.zoneFadeT, 0.42);
       this.onHint?.(`正在进入 ${MAPS[portal.to]?.name || portal.label}…`);
-      Promise.resolve(loading)
-        .then(() => {
-          if (this.portalLoading === portal.to) this.loadMap(portal.to, portal.tx, portal.ty);
+      Promise.resolve(this.onRequestMapChange(portal.to))
+        .then((result) => {
+          if (!result?.ok) {
+            this.awaitingMapAck = null;
+            const reason = result?.reason;
+            this.onHint?.(
+              reason === 'portal'
+                ? '尚未靠近出口，跨图失败'
+                : '跨图请求失败，请靠近出口后重试',
+            );
+            return null;
+          }
+          return this.enterMapLocally(portal.to, portal.tx, portal.ty)
+            .finally(() => {
+              if (this.awaitingMapAck === portal.to) this.awaitingMapAck = null;
+            });
         })
-        .catch((error) => {
-          console.error(error);
-          this.onHint?.('区域战斗资源载入失败，请重试');
-        })
-        .finally(() => {
+        .catch(() => {
+          this.awaitingMapAck = null;
           if (this.portalLoading === portal.to) this.portalLoading = null;
         });
       return true;
     }
-    this.loadMap(portal.to, portal.tx, portal.ty);
+
+    this.enterMapLocally(portal.to, portal.tx, portal.ty);
     return true;
   }
 
@@ -2497,15 +2549,16 @@ export class Game {
     this.gathering = null;
     this.pendingPortal = portal;
     this.player.target = null;
+    const goal = this.nearestOpenPoint(portal.x, portal.y, 4);
     this.navigationPath = findTilePath(
       this.walkGrid,
       this.player.x,
       this.player.y,
-      portal.x,
-      portal.y,
+      goal.x,
+      goal.y,
       T,
     );
-    this.player.moveGoal = this.navigationPath.shift() || { x: portal.x, y: portal.y };
+    this.player.moveGoal = this.navigationPath.shift() || { x: goal.x, y: goal.y };
   }
 
   /** Legacy compatibility: classic ground combat deliberately has no free jump. */
@@ -2544,7 +2597,7 @@ export class Game {
     this.pendingDrop = null;
     for (const portal of this.portals) {
       if (dist(w, portal) < 40) {
-        if (dist(p, portal) <= 58) this.usePortal(portal);
+        if (dist(p, portal) <= 72) this.usePortal(portal);
         else this.approachPortal(portal);
         return;
       }
@@ -2701,11 +2754,15 @@ export class Game {
     } else if (this.pendingDrop && (!this.pendingDrop.alive || !p.moveGoal)) {
       this.pendingDrop = null;
     }
-    if (this.pendingPortal && dist(p, this.pendingPortal) <= 58) {
+    if (this.pendingPortal && dist(p, this.pendingPortal) <= 72) {
       this.usePortal(this.pendingPortal);
       return;
-    } else if (this.pendingPortal && !p.moveGoal) {
-      this.pendingPortal = null;
+    } else if (this.pendingPortal && !p.moveGoal && !this.navigationPath.length) {
+      // Path drained short of the trigger radius — re-path instead of dropping
+      // the world-route leg on the floor.
+      if (dist(p, this.pendingPortal) > 72) this.approachPortal(this.pendingPortal);
+      else this.usePortal(this.pendingPortal);
+      return;
     }
     if (this.pendingGather?.active && !this.gathering && dist(p, this.pendingGather) <= 64) {
       this.tryGather(this.pendingGather);
