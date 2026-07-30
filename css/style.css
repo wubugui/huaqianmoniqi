@@ -242,8 +242,8 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
   position: absolute; z-index: 5;
   left: 0; right: 0; bottom: 0;
   width: 100%;
-  /* 与 bottom_frame.png 固有比例 1534:410 一致 */
-  aspect-ratio: 1534 / 410;
+  /* 与 bottom_frame.png 固有比例 1534:406 一致 */
+  aspect-ratio: 1534 / 406;
   height: auto;
   padding: 0; border: 0; background: transparent; box-shadow: none;
   display: block; transform: none;
@@ -474,7 +474,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .quick-item b { position: absolute; right: 2px; bottom: 1px; min-width: 14px; padding: 1px 2px; background: rgba(0,0,0,.72); font-size: 8px; }
 
 /* windows */
-.bag { left: 12px; bottom: calc(100vw * 410 / 1534 + 12px); }
+.bag { left: 12px; bottom: calc(100vw * 406 / 1534 + 12px); }
 .equip-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 8px; }
 .equip-slot, .bag-slot {
   min-height: 58px; border: 1px solid #3f372d; background: #0e0c0a; display: flex; flex-direction: column;
@@ -967,7 +967,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 @media (max-width: 900px) {
   .class-card { min-height: 380px; }
   .class-card .art { height: 275px; }
-  .mir-hud { width: 100%; aspect-ratio: 1534 / 410; height: auto; }
+  .mir-hud { width: 100%; aspect-ratio: 1534 / 406; height: auto; }
   .mir-skills button { width: 40px; height: 40px; }
   .mir-meta { font-size: 0; }
 }
@@ -996,7 +996,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .boss-hud { top: 50px; width: min(360px, 78vw); }
   .mir-hud {
     left: 0; right: 0; width: 100%; transform: none;
-    bottom: 0; aspect-ratio: 1534 / 410; height: auto;
+    bottom: 0; aspect-ratio: 1534 / 406; height: auto;
     padding: 0; min-height: 0;
     display: block !important;
   }
@@ -1109,7 +1109,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   }
   .bottom-hud.mir-hud {
     left: 0; right: 0; bottom: 0; width: 100%;
-    aspect-ratio: 1534 / 410; height: auto; min-height: 0; padding: 0;
+    aspect-ratio: 1534 / 406; height: auto; min-height: 0; padding: 0;
     display: block !important;
   }
   .portrait-box { width: 38px; height: 48px; }
