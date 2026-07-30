@@ -17,46 +17,116 @@ import { findTilePath } from './navigation.js?v=0.9.11';
 
 const T = WORLD.tile;
 
-/** Uniform grid for dynamic unit-unit body queries. Static decor already uses tile buckets. */
+/**
+ * Uniform grid for unit-unit body queries.
+ * Static members (NPC) are inserted once on map load.
+ * Dynamic members relocate only when their occupied cell footprint changes.
+ */
 class UnitSpatialGrid {
   constructor(cellSize = 64) {
     this.cellSize = cellSize;
     this.invCell = 1 / cellSize;
     this.cells = new Map();
-    this.bucketPool = [];
-    this.activeBuckets = [];
+  }
+
+  _key(cx, cy) {
+    return cx * 131071 + cy;
+  }
+
+  _bucket(key) {
+    let bucket = this.cells.get(key);
+    if (!bucket) {
+      bucket = [];
+      this.cells.set(key, bucket);
+    }
+    return bucket;
+  }
+
+  _footprint(ent) {
+    const radius = ent.r || COMBAT_RULES.monsterBodyRadius;
+    return {
+      minC: Math.floor((ent.x - radius) * this.invCell),
+      maxC: Math.floor((ent.x + radius) * this.invCell),
+      minR: Math.floor((ent.y - radius) * this.invCell),
+      maxR: Math.floor((ent.y + radius) * this.invCell),
+    };
   }
 
   clear() {
-    for (let i = 0; i < this.activeBuckets.length; i++) {
-      this.activeBuckets[i].length = 0;
-      this.bucketPool.push(this.activeBuckets[i]);
-    }
-    this.activeBuckets.length = 0;
     this.cells.clear();
   }
 
-  _bucket(cx, cy) {
-    const key = cx * 131071 + cy;
-    let bucket = this.cells.get(key);
-    if (bucket) return bucket;
-    bucket = this.bucketPool.pop() || [];
-    bucket.length = 0;
-    this.cells.set(key, bucket);
-    this.activeBuckets.push(bucket);
-    return bucket;
+  remove(ent) {
+    const keys = ent?._gridKeys;
+    if (!keys?.length) {
+      if (ent) {
+        ent._gridKeys = null;
+        ent._gridMinC = ent._gridMaxC = ent._gridMinR = ent._gridMaxR = undefined;
+      }
+      return;
+    }
+    for (let i = 0; i < keys.length; i++) {
+      const bucket = this.cells.get(keys[i]);
+      if (!bucket) continue;
+      const index = bucket.indexOf(ent);
+      if (index < 0) continue;
+      const last = bucket.length - 1;
+      bucket[index] = bucket[last];
+      bucket.pop();
+      if (!bucket.length) this.cells.delete(keys[i]);
+    }
+    ent._gridKeys = null;
+    ent._gridMinC = ent._gridMaxC = ent._gridMinR = ent._gridMaxR = undefined;
   }
 
   insert(ent) {
     if (!ent) return;
-    const radius = ent.r || COMBAT_RULES.monsterBodyRadius;
-    const minC = Math.floor((ent.x - radius) * this.invCell);
-    const maxC = Math.floor((ent.x + radius) * this.invCell);
-    const minR = Math.floor((ent.y - radius) * this.invCell);
-    const maxR = Math.floor((ent.y + radius) * this.invCell);
+    if (ent._gridKeys?.length) this.remove(ent);
+    const { minC, maxC, minR, maxR } = this._footprint(ent);
+    const keys = [];
     for (let row = minR; row <= maxR; row++) {
-      for (let col = minC; col <= maxC; col++) this._bucket(col, row).push(ent);
+      for (let col = minC; col <= maxC; col++) {
+        const key = this._key(col, row);
+        this._bucket(key).push(ent);
+        keys.push(key);
+      }
     }
+    ent._gridKeys = keys;
+    ent._gridMinC = minC;
+    ent._gridMaxC = maxC;
+    ent._gridMinR = minR;
+    ent._gridMaxR = maxR;
+  }
+
+  /** Relocate only when the entity crosses into a different cell footprint. */
+  relocate(ent) {
+    if (!ent) return false;
+    if (!ent._gridKeys?.length) {
+      this.insert(ent);
+      return true;
+    }
+    const { minC, maxC, minR, maxR } = this._footprint(ent);
+    if (
+      ent._gridMinC === minC
+      && ent._gridMaxC === maxC
+      && ent._gridMinR === minR
+      && ent._gridMaxR === maxR
+    ) return false;
+    this.remove(ent);
+    const keys = [];
+    for (let row = minR; row <= maxR; row++) {
+      for (let col = minC; col <= maxC; col++) {
+        const key = this._key(col, row);
+        this._bucket(key).push(ent);
+        keys.push(key);
+      }
+    }
+    ent._gridKeys = keys;
+    ent._gridMinC = minC;
+    ent._gridMaxC = maxC;
+    ent._gridMinR = minR;
+    ent._gridMaxR = maxR;
+    return true;
   }
 
   forCandidates(x, y, radius, visit) {
@@ -66,7 +136,7 @@ class UnitSpatialGrid {
     const maxR = Math.floor((y + radius) * this.invCell);
     for (let row = minR; row <= maxR; row++) {
       for (let col = minC; col <= maxC; col++) {
-        const bucket = this.cells.get(col * 131071 + row);
+        const bucket = this.cells.get(this._key(col, row));
         if (!bucket) continue;
         for (let i = 0; i < bucket.length; i++) {
           if (visit(bucket[i]) === true) return true;
@@ -288,16 +358,50 @@ export class Game {
     return { x: start.x * T, y: start.y * T };
   }
 
+  /** Full rebuild — only on map load. NPCs stay put; dynamics relocate on move. */
   rebuildUnitGrid() {
     const grid = this._unitGrid;
     grid.clear();
-    for (const npc of this.npcs) grid.insert(npc);
-    for (const unit of this.monsters) if (unit.alive) grid.insert(unit);
-    for (const unit of this.remotePlayers) if (unit.alive) grid.insert(unit);
-    for (const unit of this.networkPets) if (unit.alive) grid.insert(unit);
-    if (this.player?.alive) grid.insert(this.player);
-    if (this.player?.pet?.alive) grid.insert(this.player.pet);
+    for (const npc of this.npcs) {
+      npc._gridKeys = null;
+      grid.insert(npc);
+    }
+    for (const unit of this.monsters) {
+      unit._gridKeys = null;
+      if (unit.alive) grid.insert(unit);
+    }
+    for (const unit of this.remotePlayers) {
+      unit._gridKeys = null;
+      if (unit.alive) grid.insert(unit);
+    }
+    for (const unit of this.networkPets) {
+      unit._gridKeys = null;
+      if (unit.alive) grid.insert(unit);
+    }
+    if (this.player) {
+      this.player._gridKeys = null;
+      if (this.player.alive) grid.insert(this.player);
+    }
+    if (this.player?.pet) {
+      this.player.pet._gridKeys = null;
+      if (this.player.pet.alive) grid.insert(this.player.pet);
+    }
     return grid;
+  }
+
+  syncUnitGrid(ent) {
+    if (!ent) return;
+    if (ent.alive === false) this._unitGrid.remove(ent);
+    else this._unitGrid.relocate(ent);
+  }
+
+  /** Drop units that left the live set, then insert/relocate survivors. */
+  reconcileUnitGrid(previous, next) {
+    const keep = new Set(next);
+    for (const ent of previous) {
+      if (!keep.has(ent)) this._unitGrid.remove(ent);
+    }
+    for (const ent of next) this.syncUnitGrid(ent);
   }
 
   bodyBlocked(ent, x, y, oldX = ent.x, oldY = ent.y) {
@@ -349,6 +453,7 @@ export class Game {
     if (moved) {
       ent.direction = direction8(dx, dy, ent.direction || 's');
       if (Math.abs(dx) > 0.05) ent.facing = dx > 0 ? 1 : -1;
+      this._unitGrid.relocate(ent);
     }
     return moved;
   }
@@ -475,6 +580,7 @@ export class Game {
     this.cam.x = this.player.x;
     this.cam.y = this.player.y;
     this.clampCamera();
+    this.rebuildUnitGrid();
     this.onHint?.(m.name);
     this.log(`进入 ${m.name}`, 'zone');
     this.onSfx?.('portal');
@@ -509,6 +615,7 @@ export class Game {
         this.player.x = own.x;
         this.player.y = own.y;
         this.player.moveGoal = null;
+        this.syncUnitGrid(this.player);
         this.onHint?.('位置已由服务器校正');
       }
       if ((own.combatVersion || 0) > this.lastServerCombatVersion) {
@@ -566,6 +673,7 @@ export class Game {
         this.onQuest?.();
       }
     }
+    const previousRemotes = this.remotePlayers.slice();
     const previous = new Map(this.remotePlayers.map((player) => [player.networkId, player]));
     this.remotePlayers = snapshot.players
       .filter((entry) => entry.id !== ownId && entry.mapId === this.mapId && CLASSES[entry.classId])
@@ -609,6 +717,8 @@ export class Game {
         });
         return remote;
       });
+    this.reconcileUnitGrid(previousRemotes, this.remotePlayers.filter((entry) => entry.alive));
+    const previousNetworkPets = this.networkPets.slice();
     const previousPets = new Map(this.networkPets.map((pet) => [pet.id, pet]));
     if ((snapshot.pets || []).some((entry) => entry.mapId === this.mapId && entry.hp > 0)) {
       this.assets.ensureMobAnim?.('skeleton')?.catch((error) => console.error(error));
@@ -640,6 +750,7 @@ export class Game {
         });
         return pet;
       });
+    this.reconcileUnitGrid(previousNetworkPets, this.networkPets);
     const ownPet = (snapshot.pets || []).find((entry) => entry.ownerId === ownId && entry.mapId === this.mapId && entry.hp > 0);
     if (ownPet) {
       const pet = this.player.pet?.networkPet ? this.player.pet : {
@@ -659,9 +770,12 @@ export class Game {
         alive: ownPet.hp > 0,
       });
       this.player.pet = pet;
+      this.syncUnitGrid(pet);
     } else if (this.player.pet?.networkPet) {
+      this._unitGrid.remove(this.player.pet);
       this.player.pet = null;
     }
+    const previousMonsterList = this.monsters.slice();
     const previousMonsters = new Map(
       this.monsters.filter((monster) => monster.networkMonster).map((monster) => [monster.networkId, monster]),
     );
@@ -688,6 +802,7 @@ export class Game {
         return monster;
       });
     this.monsters = [...networkMonsters, ...localBosses];
+    this.reconcileUnitGrid(previousMonsterList, this.monsters.filter((monster) => monster.alive));
     const existingNetworkDrops = new Map(
       this.drops.filter((drop) => drop.networkDrop).map((drop) => [drop.networkId, drop]),
     );
@@ -748,6 +863,7 @@ export class Game {
         boss.deathUntil = this.time + 1.2;
         boss.respawnAt = Number.POSITIVE_INFINITY;
       }
+      this.syncUnitGrid(boss);
     }
   }
 
@@ -1432,6 +1548,7 @@ export class Game {
     victim.anim = 'death';
     victim.animFrame = 0;
     victim.attacking = false;
+    this._unitGrid.remove(victim);
     // Drop the lock on death so a single Space press cannot chain into the
     // next nearest monster via focused-button / key-repeat side channels.
     if (this.player?.target === victim) {
@@ -1739,7 +1856,9 @@ export class Game {
     }
     if (sk.type === 'summon') {
       p.mp -= sk.mana; p.skillCd[slot] = sk.cd;
+      if (p.pet) this._unitGrid.remove(p.pet);
       p.pet = new Pet(p);
+      this._unitGrid.insert(p.pet);
       this.spawnEffect(p.x, p.y, 58, '#d5d8dc', 0.8, 'summon');
       this.onHint?.('召唤骷髅！');
       this.gainSkillProficiency(sk.id, 4);
@@ -2753,7 +2872,6 @@ export class Game {
 
     const p = this.player;
     if (!p.alive) return;
-    this.rebuildUnitGrid();
     this.comboT = Math.max(0, this.comboT - dt);
     if (this.comboT <= 0) this.combo = 0;
     this.shake = Math.max(0, this.shake - 18 * dt);
@@ -2954,10 +3072,14 @@ export class Game {
         const blend = Math.hypot(dx, dy) > 180 ? 1 : Math.min(1, dt * 12);
         pet.x += dx * blend;
         pet.y += dy * blend;
+        this.syncUnitGrid(pet);
         pet.animFrame += dt * monsterAnimFps(pet.anim || 'idle', 'skeleton');
       } else {
       pet.ttl -= dt;
-      if (pet.ttl <= 0 || !pet.alive) { p.pet = null; }
+      if (pet.ttl <= 0 || !pet.alive) {
+        this._unitGrid.remove(pet);
+        p.pet = null;
+      }
       else {
         let petMoving = false;
         pet.attackCd = Math.max(0, pet.attackCd - dt);
@@ -2994,6 +3116,7 @@ export class Game {
       const blend = Math.hypot(dx, dy) > 180 ? 1 : Math.min(1, dt * 12);
       pet.x += dx * blend;
       pet.y += dy * blend;
+      this.syncUnitGrid(pet);
       pet.animFrame += dt * monsterAnimFps(pet.anim || 'idle', 'skeleton');
     }
 
@@ -3015,6 +3138,7 @@ export class Game {
         const blend = distance > 180 ? 1 : Math.min(1, dt * 12);
         m.x += dx * blend;
         m.y += dy * blend;
+        this.syncUnitGrid(m);
         const previousAnim = m.anim;
         const nextAnim = m.alive ? (m.serverAnim || (distance > 2 ? 'walk' : 'idle')) : 'death';
         if (nextAnim !== m.anim) {
@@ -3046,6 +3170,7 @@ export class Game {
           m.animFrame = 0;
           m.animT = 0;
           m.attacking = false;
+          this._unitGrid.insert(m);
         }
         continue;
       }
@@ -3182,6 +3307,7 @@ export class Game {
       const blend = distance > 180 ? 1 : Math.min(1, dt * 12);
       remote.x += dx * blend;
       remote.y += dy * blend;
+      this.syncUnitGrid(remote);
       remote.animFrame += dt * animFps(remote.anim || 'idle');
     }
 
