@@ -3,11 +3,12 @@
 
 Near-black key is intentionally conservative (armor/robes are dark).
 Do NOT run keep_largest_subject — it drops limbs when dark joints key away.
-Prefer gap-based horizontal slicing when cell boundaries cut subjects.
+Default to equal-width slicing; optional gap slicing when margins are clean.
 """
 from __future__ import annotations
 
 import argparse
+from collections import deque
 from pathlib import Path
 
 import numpy as np
@@ -27,13 +28,55 @@ def black_key(image: Image.Image) -> Image.Image:
     mx = rgb.max(axis=-1)
     mn = rgb.min(axis=-1)
     chroma = mx - mn
-    # very conservative: only void black / paper white
     near_black = (mx < 10) & (chroma < 8)
     near_white = (mn > 245) & (chroma < 10)
     bg = near_black | near_white
     out = rgba.astype(np.uint8).copy()
     out[..., 3] = np.where(bg, 0, 255).astype(np.uint8)
     return Image.fromarray(out, "RGBA")
+
+
+def remove_debris(image: Image.Image, min_keep: int = 80, far_px: int = 14) -> Image.Image:
+    """Drop tiny blobs far from the largest subject; keep attached limbs/weapons."""
+    arr = np.asarray(image.convert("RGBA"), dtype=np.uint8).copy()
+    mask = arr[..., 3] > 18
+    h, w = mask.shape
+    visited = np.zeros_like(mask, dtype=bool)
+    comps: list[np.ndarray] = []
+    ys, xs = np.where(mask)
+    for y0, x0 in zip(ys, xs):
+        if visited[y0, x0]:
+            continue
+        q = deque([(int(y0), int(x0))])
+        visited[y0, x0] = True
+        coords: list[tuple[int, int]] = []
+        while q:
+            y, x = q.popleft()
+            coords.append((y, x))
+            for yy in range(max(0, y - 1), min(h, y + 2)):
+                for xx in range(max(0, x - 1), min(w, x + 2)):
+                    if mask[yy, xx] and not visited[yy, xx]:
+                        visited[yy, xx] = True
+                        q.append((yy, xx))
+        comps.append(np.asarray(coords, dtype=np.int32))
+    if not comps:
+        return image
+    comps.sort(key=len, reverse=True)
+    main = comps[0]
+    my0, mx0 = int(main[:, 0].min()), int(main[:, 1].min())
+    my1, mx1 = int(main[:, 0].max()), int(main[:, 1].max())
+    keep = np.zeros(mask.shape, dtype=bool)
+    keep[main[:, 0], main[:, 1]] = True
+    for comp in comps[1:]:
+        cy0, cx0 = int(comp[:, 0].min()), int(comp[:, 1].min())
+        cy1, cx1 = int(comp[:, 0].max()), int(comp[:, 1].max())
+        dx = max(0, mx0 - cx1, cx0 - mx1)
+        dy = max(0, my0 - cy1, cy0 - my1)
+        near = dx <= far_px * 3 and dy <= far_px * 3
+        if len(comp) >= min_keep and (near or len(comp) >= 400):
+            keep[comp[:, 0], comp[:, 1]] = True
+    arr[..., 3] = np.where(keep, arr[..., 3], 0)
+    return Image.fromarray(arr, "RGBA")
 
 
 def crop_label_bar(sheet: Image.Image) -> Image.Image:
@@ -57,44 +100,11 @@ def slice_equal(sheet: Image.Image, count: int = FRAME_COUNT) -> list[Image.Imag
     return [sheet.crop((i * cell_w, 0, (i + 1) * cell_w if i < count - 1 else w, h)) for i in range(count)]
 
 
-def slice_by_gaps(sheet: Image.Image, count: int = FRAME_COUNT) -> list[Image.Image] | None:
-    """Split on columns that are mostly empty after a soft black mask."""
-    arr = np.asarray(sheet.convert("RGB"), dtype=np.uint16)
-    # content if not near-black
-    content = arr.max(axis=2) >= 14
-    col_density = content.mean(axis=0)
-    # gap = low density
-    is_gap = col_density < 0.01
-    # find content runs
-    runs: list[tuple[int, int]] = []
-    i, w = 0, content.shape[1]
-    while i < w:
-        while i < w and is_gap[i]:
-            i += 1
-        if i >= w:
-            break
-        start = i
-        while i < w and not is_gap[i]:
-            i += 1
-        runs.append((start, i))
-    if len(runs) != count:
-        return None
-    # pad each run a bit into gaps
-    frames = []
-    h = sheet.height
-    for idx, (a, b) in enumerate(runs):
-        pad_l = 4 if idx == 0 else 8
-        pad_r = 4 if idx == count - 1 else 8
-        left = max(0, a - pad_l)
-        right = min(w, b + pad_r)
-        frames.append(sheet.crop((left, 0, right, h)))
-    return frames
-
-
 def ingest(path: Path, class_id: str, direction: str, action: str) -> dict:
     sheet = crop_label_bar(Image.open(path))
-    raw = slice_by_gaps(sheet, FRAME_COUNT) or slice_equal(sheet, FRAME_COUNT)
-    keyed = [black_key(frame) for frame in raw]
+    # Prefer equal-width: Grok strips are usually regular; gap-slice often clips.
+    raw = slice_equal(sheet, FRAME_COUNT)
+    keyed = [remove_debris(black_key(frame)) for frame in raw]
     locked = [place_bbox_foot(crop_subject(frame, pad=2), target_h=TARGET_H) for frame in keyed]
     write_pack(class_id, direction, action, locked)
     QA_PROC.mkdir(parents=True, exist_ok=True)
