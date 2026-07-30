@@ -8,7 +8,7 @@
   <title>玛法余烬 · 沙城纪元</title>
   <link rel="preload" as="image" href="assets/game/ui/title-cover.png" />
   <link rel="preload" as="image" href="assets/game/map/world-map-v1.png" />
-  <link rel="stylesheet" href="css/style.css?v=0.9.23" />
+  <link rel="stylesheet" href="css/style.css?v=0.9.27" />
 </head>
 <body>
   <div id="app">
@@ -105,53 +105,58 @@
           </div>
         </aside>
 
-        <div class="bottom-hud hit">
-          <button id="btn-character" class="portrait-box" aria-label="角色信息">
+        <div class="bottom-hud mir-hud hit" id="mir-hud">
+          <img class="mir-hud-frame" src="assets/game/ui/hud/bottom_frame.png?v=0.9.27" alt="" draggable="false" />
+
+          <button id="btn-character" class="mir-face" aria-label="角色信息">
             <img id="hud-portrait" alt="" />
             <span class="lv" id="hud-lv">1</span>
           </button>
-          <div class="vitals">
-            <div class="name-line">
-              <strong id="hud-name">—</strong>
-              <span id="hud-class"></span>
-              <span id="hud-power" class="power">战力 0</span>
-              <span id="hud-gold" class="gold">0</span>
-            </div>
-            <div class="vital-orbs" id="vital-orbs">
-              <div class="vital-orb hp" aria-label="生命">
-                <div class="orb-well">
-                  <div class="orb-fill" id="bar-hp"></div>
-                </div>
-                <span class="orb-label">HP</span>
-                <span class="orb-text" id="txt-hp"></span>
-              </div>
-              <div class="vital-orb mp" id="vital-orb-mp" aria-label="魔法">
-                <div class="orb-well">
-                  <div class="orb-fill" id="bar-mp"></div>
-                </div>
-                <span class="orb-label">MP</span>
-                <span class="orb-text" id="txt-mp"></span>
-              </div>
-            </div>
-            <div class="bar xp" aria-label="角色经验"><div id="bar-xp"></div><span id="txt-xp">经验 0 / 100</span></div>
+
+          <div class="mir-orb hp" aria-label="生命值">
+            <div class="mir-orb-liquid" id="bar-hp"></div>
+            <span class="mir-orb-text" id="txt-hp"></span>
           </div>
-          <div class="skills" id="skill-bar" aria-label="技能栏"></div>
-          <div class="quick">
-            <button id="btn-potion-hp" class="quick-item potion-hp"><span>F1</span><b id="hp-pot-count">0</b></button>
-            <button id="btn-potion-mp" class="quick-item potion-mp"><span>F2</span><b id="mp-pot-count">0</b></button>
-            <button id="btn-town" class="quick-item scroll"><span>V</span><b id="scroll-count">0</b></button>
+          <div class="mir-orb mp" id="vital-orb-mp" aria-label="魔法值">
+            <div class="mir-orb-liquid" id="bar-mp"></div>
+            <span class="mir-orb-text" id="txt-mp"></span>
           </div>
-          <nav class="system-nav">
-            <button id="btn-bag">背包<kbd>B</kbd></button>
-            <button id="btn-char">角色<kbd>C</kbd></button>
-            <button id="btn-skills">技能<kbd>K</kbd></button>
-            <button id="btn-achievements">成就<kbd>Y</kbd></button>
-            <button id="btn-pk-mode">和平<kbd>P</kbd></button>
-            <button id="btn-social">社交<kbd>F</kbd></button>
-            <button id="btn-codex">图鉴<kbd>I</kbd></button>
-            <button id="btn-world-map">地图<kbd>M</kbd></button>
-            <button id="btn-settings">设置<kbd>Esc</kbd></button>
+
+          <div class="mir-exp" aria-label="经验值">
+            <div class="mir-exp-fill" id="bar-xp"></div>
+            <span id="txt-xp">0%</span>
+          </div>
+
+          <div class="mir-belt" aria-label="腰带">
+            <button id="btn-potion-hp" class="mir-slot potion-hp" title="金创药 1"><b id="hp-pot-count">0</b></button>
+            <button id="btn-potion-mp" class="mir-slot potion-mp" title="魔法药 2"><b id="mp-pot-count">0</b></button>
+            <button id="btn-town" class="mir-slot scroll" title="回城卷 3"><b id="scroll-count">0</b></button>
+            <button class="mir-slot empty" type="button" disabled aria-hidden="true"></button>
+            <button class="mir-slot empty" type="button" disabled aria-hidden="true"></button>
+            <button class="mir-slot empty" type="button" disabled aria-hidden="true"></button>
+          </div>
+
+          <!-- 商业传奇底栏 6 键：包裹/状态/技能/组队/行会/系统 -->
+          <nav class="mir-sys" aria-label="系统">
+            <button id="btn-bag" title="包裹"></button>
+            <button id="btn-char" title="状态"></button>
+            <button id="btn-skills" title="技能"></button>
+            <button id="btn-social" title="组队"></button>
+            <button id="btn-achievements" title="行会"></button>
+            <button id="btn-settings" title="系统"></button>
           </nav>
+
+          <div class="mir-skills" id="skill-bar" aria-label="技能栏"></div>
+
+          <div class="mir-meta" aria-hidden="true">
+            <strong id="hud-name">—</strong>
+            <span id="hud-class"></span>
+            <span id="hud-power" class="power">战力 0</span>
+            <span id="hud-gold" class="gold">0</span>
+          </div>
+          <button id="btn-world-map" class="mir-ghost-btn" type="button" tabindex="-1" aria-hidden="true">地图</button>
+          <button id="btn-pk-mode" class="mir-ghost-btn" type="button" tabindex="-1" aria-hidden="true">和平</button>
+          <button id="btn-codex" class="mir-ghost-btn" type="button" tabindex="-1" aria-hidden="true">图鉴</button>
         </div>
 
         <section id="bag" class="panel window bag hit hidden" aria-label="背包">
@@ -404,6 +409,6 @@
       </div>
     </section>
   </div>
-  <script type="module" src="js/main.js?v=0.9.23"></script>
+  <script type="module" src="js/main.js?v=0.9.27"></script>
 </body>
 </html>
