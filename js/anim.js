@@ -7,18 +7,27 @@ export const MOB_ANIM_ACTIONS = ['idle', 'walk', 'attack', 'death'];
 export const DIRECTIONS_8 = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'];
 
 const VALID_DIRECTIONS = new Set(DIRECTIONS_8);
-const WARRIOR_DIRECTION_COUNTS = Object.freeze({
-  idle: Object.freeze(Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, 6]))),
-  walk: Object.freeze(Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, direction === 'e' ? 10 : 6]))),
-  run: Object.freeze(Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, direction === 'e' ? 10 : 6]))),
-  attack: Object.freeze(Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, 6]))),
+const UNIFORM_SIX = Object.freeze(
+  Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, 6])),
+);
+const PLAYER_DIRECTION_COUNTS = Object.freeze({
+  idle: UNIFORM_SIX,
+  walk: UNIFORM_SIX,
+  run: UNIFORM_SIX,
+  attack: UNIFORM_SIX,
 });
-const TAOIST_DIRECTION_COUNTS = Object.freeze({
-  idle: Object.freeze(Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, 6]))),
-  walk: Object.freeze(Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, direction === 'e' ? 10 : 6]))),
-  run: Object.freeze(Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, direction === 'e' ? 10 : 6]))),
-  attack: Object.freeze(Object.fromEntries(DIRECTIONS_8.map((direction) => [direction, 6]))),
+
+/**
+ * Explicit authored-direction inventory. Missing class/action/direction entries
+ * are deliberately treated as legacy fallbacks; they must never be advertised
+ * as authored just because the renderer can mirror an east-facing sprite.
+ */
+export const PLAYER_DIRECTIONAL_SPECS = Object.freeze({
+  warrior: PLAYER_DIRECTION_COUNTS,
+  wizard: PLAYER_DIRECTION_COUNTS,
+  taoist: PLAYER_DIRECTION_COUNTS,
 });
+
 const FOUR_FRAME_MOB_DIRECTION_COUNTS = Object.freeze(
   Object.fromEntries(
     MOB_ANIM_ACTIONS.map((action) => [
@@ -27,16 +36,6 @@ const FOUR_FRAME_MOB_DIRECTION_COUNTS = Object.freeze(
     ]),
   ),
 );
-
-/**
- * Explicit authored-direction inventory. Missing class/action/direction entries
- * are deliberately treated as legacy fallbacks; they must never be advertised
- * as authored just because the renderer can mirror an east-facing sprite.
- */
-export const PLAYER_DIRECTIONAL_SPECS = Object.freeze({
-  warrior: WARRIOR_DIRECTION_COUNTS,
-  taoist: TAOIST_DIRECTION_COUNTS,
-});
 
 /** Explicit original monster views; absent kinds stay on the legacy fallback path. */
 export const MOB_DIRECTIONAL_SPECS = Object.freeze({

@@ -1,6 +1,14 @@
 {
-  "version": 1,
-  "class": "warrior",
+  "classId": "warrior",
+  "canvas": [
+    256,
+    256
+  ],
+  "anchor": [
+    128,
+    236
+  ],
+  "frameCount": 6,
   "directions": [
     "e",
     "se",
@@ -17,394 +25,47 @@
     "run",
     "attack"
   ],
-  "anchor": [
-    192,
-    240
-  ],
-  "states": {
+  "counts": {
     "idle": {
-      "directions": {
-        "e": {
-          "base": "assets/game/anim/directional/warrior/e/idle",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "se": {
-          "base": "assets/game/anim/directional/warrior/se/idle",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "s": {
-          "base": "assets/game/anim/directional/warrior/s/idle",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "sw": {
-          "base": "assets/game/anim/directional/warrior/sw/idle",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "w": {
-          "base": "assets/game/anim/directional/warrior/w/idle",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "nw": {
-          "base": "assets/game/anim/directional/warrior/nw/idle",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "n": {
-          "base": "assets/game/anim/directional/warrior/n/idle",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "ne": {
-          "base": "assets/game/anim/directional/warrior/ne/idle",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        }
-      }
+      "e": 6,
+      "se": 6,
+      "s": 6,
+      "sw": 6,
+      "w": 6,
+      "nw": 6,
+      "n": 6,
+      "ne": 6
     },
     "walk": {
-      "directions": {
-        "e": {
-          "base": "assets/game/anim/directional/warrior/e/walk",
-          "frames": 10,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            5
-          ],
-          "authored": true
-        },
-        "se": {
-          "base": "assets/game/anim/directional/warrior/se/walk",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "s": {
-          "base": "assets/game/anim/directional/warrior/s/walk",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "sw": {
-          "base": "assets/game/anim/directional/warrior/sw/walk",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "w": {
-          "base": "assets/game/anim/directional/warrior/w/walk",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "nw": {
-          "base": "assets/game/anim/directional/warrior/nw/walk",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "n": {
-          "base": "assets/game/anim/directional/warrior/n/walk",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "ne": {
-          "base": "assets/game/anim/directional/warrior/ne/walk",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        }
-      }
+      "e": 6,
+      "se": 6,
+      "s": 6,
+      "sw": 6,
+      "w": 6,
+      "nw": 6,
+      "n": 6,
+      "ne": 6
     },
     "run": {
-      "directions": {
-        "e": {
-          "base": "assets/game/anim/directional/warrior/e/run",
-          "frames": 10,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            5
-          ],
-          "authored": true
-        },
-        "se": {
-          "base": "assets/game/anim/directional/warrior/se/run",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "s": {
-          "base": "assets/game/anim/directional/warrior/s/run",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "sw": {
-          "base": "assets/game/anim/directional/warrior/sw/run",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "w": {
-          "base": "assets/game/anim/directional/warrior/w/run",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "nw": {
-          "base": "assets/game/anim/directional/warrior/nw/run",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "n": {
-          "base": "assets/game/anim/directional/warrior/n/run",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        },
-        "ne": {
-          "base": "assets/game/anim/directional/warrior/ne/run",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [
-            0,
-            3
-          ],
-          "authored": true
-        }
-      }
+      "e": 6,
+      "se": 6,
+      "s": 6,
+      "sw": 6,
+      "w": 6,
+      "nw": 6,
+      "n": 6,
+      "ne": 6
     },
     "attack": {
-      "directions": {
-        "e": {
-          "base": "assets/game/anim/directional/warrior/e/attack",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "se": {
-          "base": "assets/game/anim/directional/warrior/se/attack",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "s": {
-          "base": "assets/game/anim/directional/warrior/s/attack",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "sw": {
-          "base": "assets/game/anim/directional/warrior/sw/attack",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "w": {
-          "base": "assets/game/anim/directional/warrior/w/attack",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "nw": {
-          "base": "assets/game/anim/directional/warrior/nw/attack",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "n": {
-          "base": "assets/game/anim/directional/warrior/n/attack",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        },
-        "ne": {
-          "base": "assets/game/anim/directional/warrior/ne/attack",
-          "frames": 6,
-          "canvas": [
-            384,
-            256
-          ],
-          "contactFrames": [],
-          "authored": true
-        }
-      }
+      "e": 6,
+      "se": 6,
+      "s": 6,
+      "sw": 6,
+      "w": 6,
+      "nw": 6,
+      "n": 6,
+      "ne": 6
     }
-  }
+  },
+  "standard": "commercial-mir-regen-v1"
 }
