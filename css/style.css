@@ -258,8 +258,11 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .mir-face {
   position: absolute;
   left: 2.48%; top: 28.0%; width: 8.28%; height: 57.45%;
-  padding: 0; border: 0; background: #050403; cursor: pointer; overflow: hidden;
+  padding: 0; border: 0; cursor: pointer; overflow: hidden;
   pointer-events: auto; z-index: 2;
+  background:
+    radial-gradient(circle at 45% 30%, #2a2218 0%, #120e0a 55%, #050403 100%);
+  box-shadow: inset 0 0 10px rgba(0,0,0,.85);
 }
 .mir-face img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
 .mir-face .lv {
@@ -276,6 +279,11 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
   overflow: hidden;
   pointer-events: none;
   z-index: 2;
+  /* 空槽水晶井底，避免纯黑死块 */
+  background:
+    radial-gradient(circle at 38% 28%, rgba(90,80,70,.35), transparent 42%),
+    radial-gradient(circle at 50% 70%, #1a1410 0%, #070605 70%, #020201 100%);
+  box-shadow: inset 0 0 14px rgba(0,0,0,.9), inset 0 -8px 16px rgba(0,0,0,.45);
 }
 .mir-orb.hp { left: 15.06%; }
 .mir-orb.mp { left: 27.71%; }
@@ -306,8 +314,10 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .mir-exp {
   position: absolute;
   left: 46.35%; top: 24.36%; width: 18.58%; height: 7.64%;
-  background: transparent; border: 0; overflow: hidden;
+  border: 0; overflow: hidden;
   pointer-events: none; z-index: 2;
+  background: linear-gradient(180deg, #1a140e 0%, #0a0806 55%, #050403 100%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.9);
 }
 .mir-exp-fill {
   height: 100%; width: 100%; transform-origin: left center;
@@ -336,7 +346,12 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .mir-slot.potion-hp { background-size: 1200% 1000%; background-position: 0 0; }
 .mir-slot.potion-mp { background-size: 1200% 1000%; background-position: -200% 0; }
 .mir-slot.scroll { background-size: 1200% 1000%; background-position: -400% 0; }
-.mir-slot.empty { background: transparent; cursor: default; pointer-events: none; }
+.mir-slot.empty {
+  background:
+    linear-gradient(180deg, rgba(40,32,24,.55), rgba(8,6,5,.9));
+  box-shadow: inset 0 0 6px rgba(0,0,0,.75);
+  cursor: default; pointer-events: none;
+}
 .mir-slot b {
   position: absolute; right: 2px; bottom: 1px; min-width: 12px; padding: 0 2px;
   background: rgba(0,0,0,.72); color: #ffe19a; font-size: 8px; line-height: 1.2;
