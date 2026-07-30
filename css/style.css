@@ -355,13 +355,13 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
   border: 0; background: transparent; cursor: pointer; padding: 0; min-width: 0;
   pointer-events: auto;
 }
-/* 六键中心按框内图标实位（非等距） */
-.mir-sys button:nth-child(1) { left: calc(72.43% - 2.15%); }
-.mir-sys button:nth-child(2) { left: calc(76.34% - 2.15%); }
-.mir-sys button:nth-child(3) { left: calc(81.68% - 2.15%); }
-.mir-sys button:nth-child(4) { left: calc(86.64% - 2.15%); }
-.mir-sys button:nth-child(5) { left: calc(90.94% - 2.15%); }
-.mir-sys button:nth-child(6) { left: calc(95.18% - 2.15%); }
+/* 六键中心按框内图标质心实位 */
+.mir-sys button:nth-child(1) { left: calc(71.90% - 2.15%); }
+.mir-sys button:nth-child(2) { left: calc(76.60% - 2.15%); }
+.mir-sys button:nth-child(3) { left: calc(81.19% - 2.15%); }
+.mir-sys button:nth-child(4) { left: calc(86.08% - 2.15%); }
+.mir-sys button:nth-child(5) { left: calc(91.40% - 2.15%); }
+.mir-sys button:nth-child(6) { left: calc(96.06% - 2.15%); }
 .mir-sys button:hover { filter: brightness(1.18); }
 .mir-skills {
   position: absolute; left: 39%; bottom: calc(100% + 6px); width: 30%;
@@ -431,7 +431,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .quick-item b { position: absolute; right: 2px; bottom: 1px; min-width: 14px; padding: 1px 2px; background: rgba(0,0,0,.72); font-size: 8px; }
 
 /* windows */
-.bag { left: 12px; bottom: 176px; }
+.bag { left: 12px; bottom: calc(100vw * 275 / 1534 + 12px); }
 .equip-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 8px; }
 .equip-slot, .bag-slot {
   min-height: 58px; border: 1px solid #3f372d; background: #0e0c0a; display: flex; flex-direction: column;
@@ -1140,7 +1140,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     left: 0; right: 0;
     bottom: 0;
     width: 100%;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    /* 安全区用外扩，避免 padding 二次拉伸框体 */
+    margin-bottom: 0;
+    padding-bottom: 0;
   }
   .mobile-controls {
     padding-left: max(9px, env(safe-area-inset-left));
