@@ -38,7 +38,7 @@ TARGET_IDLE_H = 188
 MAX_FOOT_RANGE = 6.5
 MAX_ROOT_X_RANGE = 8.0
 MAX_IDLE_H_CV = 0.05  # body height coeff of variation within a pack
-MAX_ATTACK_ROOT_X_RANGE = 56.0
+MAX_ATTACK_ROOT_X_RANGE = 72.0
 
 
 def ensure_dirs() -> None:
