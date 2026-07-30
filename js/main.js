@@ -1240,19 +1240,20 @@ function syncHud() {
   $('#hud-gold').textContent = `${player.gold} 金`;
   const usesMana = player.classId !== 'warrior';
   document.body.classList.toggle('no-mana', !usesMana);
-  document.querySelector('.bottom-hud')?.classList.toggle('no-mana', !usesMana);
+  document.querySelector('.mir-hud')?.classList.toggle('no-mana', !usesMana);
   const hpPct = Math.max(0, Math.min(1, player.hp / Math.max(1, player.maxHp)));
   const mpPct = Math.max(0, Math.min(1, player.mp / Math.max(1, player.maxMp)));
   $('#bar-hp').style.setProperty('--orb-pct', String(hpPct));
   $('#bar-mp').style.setProperty('--orb-pct', String(mpPct));
   const xpNeed = player.xpNeed();
   const xpPct = player.level >= 50 ? 1 : Math.min(1, player.xp / Math.max(1, xpNeed));
+  $('#bar-xp').style.setProperty('--xp-pct', String(xpPct));
   $('#bar-xp').style.transform = `scaleX(${xpPct})`;
   $('#txt-hp').textContent = `${Math.ceil(player.hp)}/${Math.ceil(player.maxHp)}`;
   $('#txt-mp').textContent = `${Math.ceil(player.mp)}/${Math.ceil(player.maxMp)}`;
   $('#txt-xp').textContent = player.level >= 50
-    ? '经验已满 · Lv.50'
-    : `经验 ${player.xp.toLocaleString()} / ${xpNeed.toLocaleString()} · ${Math.floor(xpPct * 100)}%`;
+    ? 'MAX'
+    : `${Math.floor(xpPct * 100)}%`;
   const hpPotCount = player.countItem('hp_pot') + player.countItem('hp_pot_b');
   const mpPotCount = player.countItem('mp_pot') + player.countItem('mp_pot_b');
   $('#hp-pot-count').textContent = hpPotCount;
