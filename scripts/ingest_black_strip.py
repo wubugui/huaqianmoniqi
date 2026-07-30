@@ -141,11 +141,30 @@ def ingest(path: Path, class_id: str, direction: str, action: str) -> dict:
     return metrics(locked)
 
 
+def ingest_grid(path: Path, class_id: str, direction: str, action: str, cols: int = 3, rows: int = 2) -> dict:
+    from commercial_anim_pipeline import keep_largest_subject, slice_grid
+    sheet = crop_label_bar(Image.open(path))
+    grid = slice_grid(sheet, cols=cols, rows=rows)
+    raw = [cell for row in grid for cell in row]
+    keyed = []
+    for frame in raw:
+        frame = black_key(frame)
+        frame = keep_largest_subject(frame)
+        frame = density_trim(frame)
+        frame = remove_debris(frame)
+        keyed.append(frame)
+    locked = [place_bbox_foot(crop_subject(frame, pad=2), target_h=TARGET_H) for frame in keyed]
+    write_pack(class_id, direction, action, locked)
+    return metrics(locked)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("path")
     parser.add_argument("class_id")
     parser.add_argument("direction")
     parser.add_argument("action")
+    parser.add_argument("--grid", action="store_true", help="slice as 2x3 grid instead of horizontal strip")
     args = parser.parse_args()
-    print(ingest(Path(args.path), args.class_id, args.direction, args.action))
+    fn = ingest_grid if args.grid else ingest
+    print(fn(Path(args.path), args.class_id, args.direction, args.action))
