@@ -210,6 +210,9 @@ for role_type, role, act, d, expected_size in packs:
   periodic = act in ('idle', 'walk') or (
     role_type in ('player', 'directional-player') and act == 'run'
   )
+  if not roots or not feet:
+    issues.append(f"{role_type}/{role}/{act} no-valid-frames-for-anchor-metrics")
+    continue
   root_range = max(roots) - min(roots)
   foot_range = max(feet) - min(feet)
   if periodic:
