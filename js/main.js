@@ -738,10 +738,11 @@ function useSkill(index) {
 function buildSkills() {
   const bar = $('#skill-bar');
   bar.innerHTML = '';
+  // 底栏 2×3 六槽：普通攻击 + 职业四技能 + 1 预留空槽
   const basic = document.createElement('button');
   basic.type = 'button';
   basic.className = 'basic-attack ready';
-  basic.innerHTML = '<span class="skill-icon" aria-hidden="true"></span><span class="skill-glyph" aria-hidden="true">⚔</span><span class="k">空格</span><span class="skill-name">普通攻击</span><span class="skill-level">Lv.1</span>';
+  basic.innerHTML = '<span class="skill-icon" aria-hidden="true"></span><span class="skill-glyph" aria-hidden="true">⚔</span><span class="k">空格</span><span class="skill-name">普攻</span><span class="skill-level">Lv.1</span>';
   basic.title = '普通攻击从1级即可使用，不需要技能书';
   basic.setAttribute('aria-label', '空格 普通攻击，1级可用');
   basic.onpointerdown = (event) => {
@@ -770,6 +771,14 @@ function buildSkills() {
       mobileButton.innerHTML = `<span class="mobile-skill-key">${skill.key}</span><span class="mobile-cd"></span>`;
     }
   });
+  while (bar.children.length < 6) {
+    const empty = document.createElement('button');
+    empty.type = 'button';
+    empty.className = 'skill-empty';
+    empty.disabled = true;
+    empty.setAttribute('aria-hidden', 'true');
+    bar.appendChild(empty);
+  }
 }
 
 function skillBookFor(skillId, classId = game?.player.classId) {

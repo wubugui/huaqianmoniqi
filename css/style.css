@@ -242,8 +242,8 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
   position: absolute; z-index: 5;
   left: 0; right: 0; bottom: 0;
   width: 100%;
-  /* 与 bottom_frame.png 固有比例 1534:407 一致 */
-  aspect-ratio: 1534 / 407;
+  /* 与 bottom_frame.png 固有比例 1534:410 一致 */
+  aspect-ratio: 1534 / 410;
   height: auto;
   padding: 0; border: 0; background: transparent; box-shadow: none;
   display: block; transform: none;
@@ -344,9 +344,9 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 }
 .mir-belt {
   position: absolute;
-  left: 54.5%; top: 18%; width: 16%; height: 52%;
+  left: 50.5%; top: 18%; width: 16.5%; height: 52%;
   display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
-  gap: 2%;
+  gap: 3%;
   padding: 0;
   pointer-events: auto; z-index: 2;
 }
@@ -399,42 +399,48 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .mir-sys button:hover { filter: brightness(1.18); border-color: #c8994d; }
 .mir-skills {
   position: absolute;
-  left: 32.5%; top: 20%; width: 20%; height: 48%;
+  left: 32.0%; top: 18%; width: 16.5%; height: 52%;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2%;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 3%;
   pointer-events: auto; z-index: 3;
 }
 .mir-skills button {
   width: 100%; height: 100%; border: 0; background: transparent;
-  color: #f2eadc; cursor: pointer; position: relative; padding: 4px 1px 2px; font-size: 7px; line-height: 1.1;
+  color: #f2eadc; cursor: pointer; position: relative; padding: 3px 1px 2px; font-size: 7px; line-height: 1.1;
   overflow: hidden; isolation: isolate; text-shadow: 0 1px 3px #000;
 }
 .mir-skills button .skill-icon {
-  position: absolute; z-index: -2; inset: 3px; background: var(--skill-icon) center / cover no-repeat;
+  position: absolute; z-index: -2; inset: 4px; background: var(--skill-icon) center / cover no-repeat;
   filter: saturate(.94) contrast(1.06);
 }
 .mir-skills button::before {
-  content: ""; position: absolute; z-index: -1; inset: 3px; pointer-events: none;
+  content: ""; position: absolute; z-index: -1; inset: 4px; pointer-events: none;
   background: linear-gradient(180deg, rgba(3,2,2,.04) 35%, rgba(3,2,2,.88) 94%);
 }
-.mir-skills button .k { position: absolute; left: 3px; top: 1px; color: var(--gold-2); font-size: 8px; font-weight: 800; }
+.mir-skills button .k { position: absolute; left: 3px; top: 2px; color: var(--gold-2); font-size: 8px; font-weight: 800; }
 .mir-skills button .skill-name { position: absolute; left: 2px; right: 2px; bottom: 2px; white-space: nowrap; font-weight: 700; font-size: 7px; overflow: hidden; text-overflow: ellipsis; }
 .mir-skills button .mana { position: absolute; right: 2px; top: 12px; padding: 0 2px; background: rgba(5,20,37,.68); color: #89c4f4; font-size: 7px; }
-.mir-skills button .skill-level { position: absolute; right: 2px; top: 1px; color: #f0cf8b; font-size: 7px; }
-.mir-skills button.basic-attack { display: none; } /* 普通攻击走空格，不占四技能槽 */
+.mir-skills button .skill-level { position: absolute; right: 2px; top: 2px; color: #f0cf8b; font-size: 7px; }
+.mir-skills button.basic-attack .skill-icon {
+  background: radial-gradient(circle at 48% 42%, rgba(218,174,90,.46), rgba(91,52,20,.82) 45%, #130e0a 74%);
+}
 .mir-skills button .skill-glyph {
-  position: absolute; z-index: 0; inset: 7px 0 auto; color: #ffe1a0; font-size: 18px; filter: drop-shadow(0 2px 3px #000);
+  position: absolute; z-index: 0; inset: 18% 0 auto; color: #ffe1a0; font-size: clamp(12px, 1.2vw, 18px); filter: drop-shadow(0 2px 3px #000);
 }
 .mir-skills button .cd {
   position: absolute; inset: 0; z-index: 2; background: rgba(5,4,3,.78);
-  display: flex; align-items: center; justify-content: center; font: bold 13px Georgia, serif; color: #eee;
+  display: flex; align-items: center; justify-content: center; font: bold 12px Georgia, serif; color: #eee;
 }
 .mir-skills button.ready { filter: brightness(1.08); }
 .mir-skills button.locked { filter: grayscale(.85); color: #777067; }
 .mir-skills button.locked::before {
   content: "未学"; position: absolute; z-index: 2; inset: 35% 2px auto;
   padding: 2px 0; background: rgba(8,7,6,.86); color: #b09270; font-size: 8px; text-align: center;
+}
+.mir-skills button.skill-empty {
+  cursor: default; pointer-events: none; opacity: 0;
 }
 /* 角色名/战力/金币不再浮在场景上的半透明黑条；数据仍由 JS 写入供其他面板复用 */
 .mir-meta {
@@ -468,7 +474,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .quick-item b { position: absolute; right: 2px; bottom: 1px; min-width: 14px; padding: 1px 2px; background: rgba(0,0,0,.72); font-size: 8px; }
 
 /* windows */
-.bag { left: 12px; bottom: calc(100vw * 407 / 1534 + 12px); }
+.bag { left: 12px; bottom: calc(100vw * 410 / 1534 + 12px); }
 .equip-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 8px; }
 .equip-slot, .bag-slot {
   min-height: 58px; border: 1px solid #3f372d; background: #0e0c0a; display: flex; flex-direction: column;
@@ -961,7 +967,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 @media (max-width: 900px) {
   .class-card { min-height: 380px; }
   .class-card .art { height: 275px; }
-  .mir-hud { width: 100%; aspect-ratio: 1534 / 407; height: auto; }
+  .mir-hud { width: 100%; aspect-ratio: 1534 / 410; height: auto; }
   .mir-skills button { width: 40px; height: 40px; }
   .mir-meta { font-size: 0; }
 }
@@ -990,7 +996,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .boss-hud { top: 50px; width: min(360px, 78vw); }
   .mir-hud {
     left: 0; right: 0; width: 100%; transform: none;
-    bottom: 0; aspect-ratio: 1534 / 407; height: auto;
+    bottom: 0; aspect-ratio: 1534 / 410; height: auto;
     padding: 0; min-height: 0;
     display: block !important;
   }
@@ -1103,7 +1109,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   }
   .bottom-hud.mir-hud {
     left: 0; right: 0; bottom: 0; width: 100%;
-    aspect-ratio: 1534 / 275; height: auto; min-height: 0; padding: 0;
+    aspect-ratio: 1534 / 410; height: auto; min-height: 0; padding: 0;
     display: block !important;
   }
   .portrait-box { width: 38px; height: 48px; }
