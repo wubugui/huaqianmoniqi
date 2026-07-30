@@ -396,8 +396,10 @@ ok(mainSource.includes('onRequestMapChange') && mainSource.includes('portalLoadi
 ok(mainSource.includes('spaceAttackArmed') && mainSource.includes('triggerBasicAttack'), 'basic attack is edge-triggered and blurs focused controls');
 ok(readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('UnitSpatialGrid')
   && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('rebuildUnitGrid')
+  && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('relocate(ent)')
+  && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('syncUnitGrid')
   && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('packPursuitSlots')
-  && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('_decorCells'), 'unit body queries use a uniform grid; pack pursuit and decor cull remain');
+  && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('_decorCells'), 'unit grid is static-insert + move-relocate; pack pursuit and decor cull remain');
 ok(mainSource.includes('event.repeat') && mainSource.includes('basic.onkeydown'), 'Space key-repeat and focused skill-button Space clicks are suppressed');
 ok(readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('onRequestMapChange')
   && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('awaitingMapAck'), 'portal use requests server map change before local loadMap');
