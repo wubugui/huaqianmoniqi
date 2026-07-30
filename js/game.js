@@ -2,7 +2,7 @@ import {
   ACHIEVEMENTS, BOUNTIES, CLASSES, COMBAT_RULES, ENHANCE_MAX, EQUIP_SLOTS, GATHER_DEFS, ITEMS, MAPS, MONSTERS, QUESTS, RARITIES, RECIPES,
   SCENERY, SHOP_TOWN, SKILL_MAX_LEVEL, TILES, VISUAL_SCALE, WALL_MATERIALS, WORLD, ZONE_VISUALS, enhanceCost,
   isWorldBlocked, isWorldPositionOpen,
-} from './config.js?v=0.9.19';
+} from './config.js?v=0.9.20';
 import { clamp, dist, dist2, moveToward, loadImage, randInt } from './utils.js';
 import {
   Player, Monster, Npc, Drop, Projectile, Effect, FloatingText, Pet, createItemEntry, normalizeItemEntry,
@@ -16,6 +16,66 @@ import {
 import { findTilePath } from './navigation.js?v=0.9.11';
 
 const T = WORLD.tile;
+
+/** Uniform grid for dynamic unit-unit body queries. Static decor already uses tile buckets. */
+class UnitSpatialGrid {
+  constructor(cellSize = 64) {
+    this.cellSize = cellSize;
+    this.invCell = 1 / cellSize;
+    this.cells = new Map();
+    this.bucketPool = [];
+    this.activeBuckets = [];
+  }
+
+  clear() {
+    for (let i = 0; i < this.activeBuckets.length; i++) {
+      this.activeBuckets[i].length = 0;
+      this.bucketPool.push(this.activeBuckets[i]);
+    }
+    this.activeBuckets.length = 0;
+    this.cells.clear();
+  }
+
+  _bucket(cx, cy) {
+    const key = cx * 131071 + cy;
+    let bucket = this.cells.get(key);
+    if (bucket) return bucket;
+    bucket = this.bucketPool.pop() || [];
+    bucket.length = 0;
+    this.cells.set(key, bucket);
+    this.activeBuckets.push(bucket);
+    return bucket;
+  }
+
+  insert(ent) {
+    if (!ent) return;
+    const radius = ent.r || COMBAT_RULES.monsterBodyRadius;
+    const minC = Math.floor((ent.x - radius) * this.invCell);
+    const maxC = Math.floor((ent.x + radius) * this.invCell);
+    const minR = Math.floor((ent.y - radius) * this.invCell);
+    const maxR = Math.floor((ent.y + radius) * this.invCell);
+    for (let row = minR; row <= maxR; row++) {
+      for (let col = minC; col <= maxC; col++) this._bucket(col, row).push(ent);
+    }
+  }
+
+  forCandidates(x, y, radius, visit) {
+    const minC = Math.floor((x - radius) * this.invCell);
+    const maxC = Math.floor((x + radius) * this.invCell);
+    const minR = Math.floor((y - radius) * this.invCell);
+    const maxR = Math.floor((y + radius) * this.invCell);
+    for (let row = minR; row <= maxR; row++) {
+      for (let col = minC; col <= maxC; col++) {
+        const bucket = this.cells.get(col * 131071 + row);
+        if (!bucket) continue;
+        for (let i = 0; i < bucket.length; i++) {
+          if (visit(bucket[i]) === true) return true;
+        }
+      }
+    }
+    return false;
+  }
+}
 
 export {
   pickPlayerAnim, pickMonsterAnim, animFps, monsterAnimFps, direction8, ANIM_ACTIONS, MOB_ANIM_ACTIONS,
@@ -86,7 +146,7 @@ export class Game {
     this.lastServerCombatVersion = 0;
     this.lastServerAuthorityVersion = 0;
     this.worldState = null;
-    this._moveBlockers = [];
+    this._unitGrid = new UnitSpatialGrid(64);
     this._decorCells = new Map();
     this._decorCellSize = T * 4;
     this.persistDirty = false;
@@ -228,34 +288,32 @@ export class Game {
     return { x: start.x * T, y: start.y * T };
   }
 
-  rebuildMoveBlockers() {
-    const blockers = this._moveBlockers;
-    blockers.length = 0;
-    for (const npc of this.npcs) blockers.push(npc);
-    for (const unit of this.monsters) if (unit.alive) blockers.push(unit);
-    for (const unit of this.remotePlayers) if (unit.alive) blockers.push(unit);
-    for (const unit of this.networkPets) if (unit.alive) blockers.push(unit);
-    if (this.player?.alive) blockers.push(this.player);
-    if (this.player?.pet?.alive) blockers.push(this.player.pet);
-    return blockers;
+  rebuildUnitGrid() {
+    const grid = this._unitGrid;
+    grid.clear();
+    for (const npc of this.npcs) grid.insert(npc);
+    for (const unit of this.monsters) if (unit.alive) grid.insert(unit);
+    for (const unit of this.remotePlayers) if (unit.alive) grid.insert(unit);
+    for (const unit of this.networkPets) if (unit.alive) grid.insert(unit);
+    if (this.player?.alive) grid.insert(this.player);
+    if (this.player?.pet?.alive) grid.insert(this.player.pet);
+    return grid;
   }
 
   bodyBlocked(ent, x, y, oldX = ent.x, oldY = ent.y) {
     const radius = ent.r || (ent.type === 'player' ? COMBAT_RULES.playerBodyRadius : COMBAT_RULES.monsterBodyRadius);
-    const blockers = this._moveBlockers;
-    for (let i = 0; i < blockers.length; i++) {
-      const blocker = blockers[i];
-      if (!blocker || blocker === ent || blocker.id === ent.id) continue;
+    const queryRadius = radius + COMBAT_RULES.playerBodyRadius;
+    return this._unitGrid.forCandidates(x, y, queryRadius, (blocker) => {
+      if (!blocker || blocker === ent || blocker.id === ent.id) return false;
       const minimum = radius + (blocker.r || 16) - 2;
       const nextDistance = Math.hypot(x - blocker.x, y - blocker.y);
-      if (nextDistance >= minimum) continue;
+      if (nextDistance >= minimum) return false;
       // A restored or freshly spawned unit may begin overlapped. It may step out,
       // but can never move deeper through the other unit.
       const oldDistance = Math.hypot(oldX - blocker.x, oldY - blocker.y);
-      if (oldDistance < minimum && nextDistance > oldDistance + 0.01) continue;
+      if (oldDistance < minimum && nextDistance > oldDistance + 0.01) return false;
       return true;
-    }
-    return false;
+    });
   }
 
   positionOpen(ent, x, y, oldX = ent.x, oldY = ent.y) {
@@ -2695,7 +2753,7 @@ export class Game {
 
     const p = this.player;
     if (!p.alive) return;
-    this.rebuildMoveBlockers();
+    this.rebuildUnitGrid();
     this.comboT = Math.max(0, this.comboT - dt);
     if (this.comboT <= 0) this.combo = 0;
     this.shake = Math.max(0, this.shake - 18 * dt);

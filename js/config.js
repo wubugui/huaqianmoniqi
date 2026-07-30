@@ -2117,11 +2117,38 @@ export function isWorldBlocked(mapId, x, y) {
 
 export function isWorldPositionOpen(mapId, x, y, radius = 0) {
   const r = Math.max(0, radius);
-  return !isWorldBlocked(mapId, x, y)
-    && !isWorldBlocked(mapId, x + r, y)
-    && !isWorldBlocked(mapId, x - r, y)
-    && !isWorldBlocked(mapId, x, y + r)
-    && !isWorldBlocked(mapId, x, y - r);
+  if (r <= 0) return !isWorldBlocked(mapId, x, y);
+
+  const map = MAPS[mapId];
+  if (!map?.grid) return false;
+  const minCol = Math.max(0, Math.floor((x - r) / WORLD.tile));
+  const maxCol = Math.min(WORLD.cols - 1, Math.floor((x + r) / WORLD.tile));
+  const minRow = Math.max(0, Math.floor((y - r) / WORLD.tile));
+  const maxRow = Math.min(WORLD.rows - 1, Math.floor((y + r) / WORLD.tile));
+  if (minCol > maxCol || minRow > maxRow) return false;
+
+  const buckets = collisionBuckets(mapId);
+  // Footprint vs walls: reject when the body circle reaches a solid tile.
+  for (let row = minRow; row <= maxRow; row++) {
+    for (let col = minCol; col <= maxCol; col++) {
+      if (map.grid[row][col] !== 1) continue;
+      const nearestX = Math.min((col + 1) * WORLD.tile, Math.max(col * WORLD.tile, x));
+      const nearestY = Math.min((row + 1) * WORLD.tile, Math.max(row * WORLD.tile, y));
+      if (Math.hypot(x - nearestX, y - nearestY) <= r) return false;
+    }
+  }
+  // Footprint vs static decor: query only the overlapping tile buckets once.
+  for (let row = minRow; row <= maxRow; row++) {
+    for (let col = minCol; col <= maxCol; col++) {
+      const candidates = buckets[row * WORLD.cols + col];
+      if (!candidates) continue;
+      for (let i = 0; i < candidates.length; i++) {
+        const decor = candidates[i];
+        if (Math.hypot(x - decor.x, y - decor.y) <= decor.radius + r) return false;
+      }
+    }
+  }
+  return true;
 }
 
 export const QUESTS = [

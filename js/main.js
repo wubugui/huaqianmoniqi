@@ -1,8 +1,8 @@
-import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.19';
+import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.20';
 import {
   ACHIEVEMENTS, BOUNTIES, ENHANCE_MAX, EQUIP_SLOTS, ITEM_TYPE_NAMES, MAPS, MONSTERS, RARITIES, SKILL_LEVEL_XP, SKILL_MAX_LEVEL,
   SLOT_NAMES, WORLD, enhanceCost,
-} from './config.js?v=0.9.19';
+} from './config.js?v=0.9.20';
 import { hasSave, loadGame, clearSave } from './save.js';
 import { SoundSystem } from './audio.js?v=0.9.13';
 import { MultiplayerClient } from './network.js?v=0.9.10';
