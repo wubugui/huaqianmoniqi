@@ -2,7 +2,7 @@ import {
   ACHIEVEMENTS, BOUNTIES, CLASSES, COMBAT_RULES, ENHANCE_MAX, EQUIP_SLOTS, GATHER_DEFS, ITEMS, MAPS, MONSTERS, QUESTS, RARITIES, RECIPES,
   SCENERY, SHOP_TOWN, SKILL_MAX_LEVEL, TILES, VISUAL_SCALE, WALL_MATERIALS, WORLD, ZONE_VISUALS, enhanceCost,
   isWorldBlocked, isWorldPositionOpen,
-} from './config.js?v=0.9.20';
+} from './config.js?v=0.9.21';
 import { clamp, dist, dist2, moveToward, loadImage, randInt } from './utils.js';
 import {
   Player, Monster, Npc, Drop, Projectile, Effect, FloatingText, Pet, createItemEntry, normalizeItemEntry,

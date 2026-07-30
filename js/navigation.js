@@ -1,4 +1,4 @@
-import { MAPS } from './config.js?v=0.9.20';
+import { MAPS } from './config.js?v=0.9.21';
 
 export const WORLD_MAP_LAYOUT = {
   bich: { x: 12, y: 46 },

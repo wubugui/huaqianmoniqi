@@ -124,13 +124,13 @@ export const CLASSES = {
     avatar: 'assets/game/portrait/warrior_128.png',
     unit: 'assets/game/unit/warrior.png',
     color: '#d35400',
-    base: { hp: 140, mp: 35, atk: 14, mag: 0, def: 6, magDef: 2, crit: 0.08, dodge: 0.03, lifesteal: 0.02, range: 58, ms: 168, as: 1.05 },
-    gain: { hp: 22, mp: 3, atk: 2.6, mag: 0, def: 1.4, magDef: 0.3, crit: 0.001, dodge: 0.0005 },
+    base: { hp: 140, mp: 0, atk: 14, mag: 0, def: 6, magDef: 2, crit: 0.08, dodge: 0.03, lifesteal: 0.02, range: 58, ms: 168, as: 1.05 },
+    gain: { hp: 22, mp: 0, atk: 2.6, mag: 0, def: 1.4, magDef: 0.3, crit: 0.001, dodge: 0.0005 },
     skills: [
       { id: 'slash', name: '基本剑术', key: '1', type: 'passive', mana: 0, cd: 0, reqLevel: 7, icon: 'assets/game/ui/icons/skill-slash.png', desc: '提升普通攻击命中与伤害。' },
       { id: 'thrust', name: '刺杀剑术', key: '2', type: 'boost', mana: 0, cd: 0.5, reqLevel: 25, icon: 'assets/game/ui/icons/skill-thrust.png', desc: '下一刀穿透防御造成重击。' },
-      { id: 'fire_sword', name: '烈火剑法', key: '3', type: 'boost', mana: 10, cd: 7, reqLevel: 35, icon: 'assets/game/ui/icons/skill-fire-sword.png', desc: '凝聚烈火，强化下一次攻击。' },
-      { id: 'rush', name: '野蛮冲撞', key: '4', type: 'dash', mana: 12, cd: 10, range: 180, reqLevel: 30, icon: 'assets/game/ui/icons/skill-rush.png', desc: '冲向目标并造成短暂僵直。' },
+      { id: 'fire_sword', name: '烈火剑法', key: '3', type: 'boost', mana: 0, cd: 7, reqLevel: 35, icon: 'assets/game/ui/icons/skill-fire-sword.png', desc: '凝聚烈火，强化下一次攻击。' },
+      { id: 'rush', name: '野蛮冲撞', key: '4', type: 'dash', mana: 0, cd: 10, range: 180, reqLevel: 30, icon: 'assets/game/ui/icons/skill-rush.png', desc: '冲向目标并造成短暂僵直。' },
     ],
   },
   wizard: {

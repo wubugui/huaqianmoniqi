@@ -8,7 +8,7 @@
   <title>玛法余烬 · 沙城纪元</title>
   <link rel="preload" as="image" href="assets/game/ui/title-cover.png" />
   <link rel="preload" as="image" href="assets/game/map/world-map-v1.png" />
-  <link rel="stylesheet" href="css/style.css?v=0.9.22" />
+  <link rel="stylesheet" href="css/style.css?v=0.9.23" />
 </head>
 <body>
   <div id="app">
@@ -117,8 +117,22 @@
               <span id="hud-power" class="power">战力 0</span>
               <span id="hud-gold" class="gold">0</span>
             </div>
-            <div class="bar hp"><div id="bar-hp"></div><span id="txt-hp"></span></div>
-            <div class="bar mp"><div id="bar-mp"></div><span id="txt-mp"></span></div>
+            <div class="vital-orbs" id="vital-orbs">
+              <div class="vital-orb hp" aria-label="生命">
+                <div class="orb-well">
+                  <div class="orb-fill" id="bar-hp"></div>
+                </div>
+                <span class="orb-label">HP</span>
+                <span class="orb-text" id="txt-hp"></span>
+              </div>
+              <div class="vital-orb mp" id="vital-orb-mp" aria-label="魔法">
+                <div class="orb-well">
+                  <div class="orb-fill" id="bar-mp"></div>
+                </div>
+                <span class="orb-label">MP</span>
+                <span class="orb-text" id="txt-mp"></span>
+              </div>
+            </div>
             <div class="bar xp" aria-label="角色经验"><div id="bar-xp"></div><span id="txt-xp">经验 0 / 100</span></div>
           </div>
           <div class="skills" id="skill-bar" aria-label="技能栏"></div>
@@ -390,6 +404,6 @@
       </div>
     </section>
   </div>
-  <script type="module" src="js/main.js?v=0.9.22"></script>
+  <script type="module" src="js/main.js?v=0.9.23"></script>
 </body>
 </html>

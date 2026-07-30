@@ -1,8 +1,8 @@
-import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.22';
+import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.23';
 import {
   ACHIEVEMENTS, BOUNTIES, ENHANCE_MAX, EQUIP_SLOTS, ITEM_TYPE_NAMES, MAPS, MONSTERS, RARITIES, SKILL_LEVEL_XP, SKILL_MAX_LEVEL,
   SLOT_NAMES, WORLD, enhanceCost,
-} from './config.js?v=0.9.20';
+} from './config.js?v=0.9.21';
 import { hasSave, loadGame, clearSave } from './save.js';
 import { SoundSystem } from './audio.js?v=0.9.13';
 import { MultiplayerClient } from './network.js?v=0.9.10';
@@ -1238,13 +1238,18 @@ function syncHud() {
   $('#hud-lv').textContent = player.level;
   $('#hud-power').textContent = `战力 ${player.combatPower()}`;
   $('#hud-gold').textContent = `${player.gold} 金`;
-  $('#bar-hp').style.transform = `scaleX(${Math.max(0, player.hp / player.maxHp)})`;
-  $('#bar-mp').style.transform = `scaleX(${Math.max(0, player.mp / Math.max(1, player.maxMp))})`;
+  const usesMana = player.classId !== 'warrior';
+  document.body.classList.toggle('no-mana', !usesMana);
+  document.querySelector('.bottom-hud')?.classList.toggle('no-mana', !usesMana);
+  const hpPct = Math.max(0, Math.min(1, player.hp / Math.max(1, player.maxHp)));
+  const mpPct = Math.max(0, Math.min(1, player.mp / Math.max(1, player.maxMp)));
+  $('#bar-hp').style.setProperty('--orb-pct', String(hpPct));
+  $('#bar-mp').style.setProperty('--orb-pct', String(mpPct));
   const xpNeed = player.xpNeed();
   const xpPct = player.level >= 50 ? 1 : Math.min(1, player.xp / Math.max(1, xpNeed));
   $('#bar-xp').style.transform = `scaleX(${xpPct})`;
-  $('#txt-hp').textContent = `${Math.ceil(player.hp)} / ${Math.ceil(player.maxHp)}`;
-  $('#txt-mp').textContent = `${Math.ceil(player.mp)} / ${Math.ceil(player.maxMp)}`;
+  $('#txt-hp').textContent = `${Math.ceil(player.hp)}/${Math.ceil(player.maxHp)}`;
+  $('#txt-mp').textContent = `${Math.ceil(player.mp)}/${Math.ceil(player.maxMp)}`;
   $('#txt-xp').textContent = player.level >= 50
     ? '经验已满 · Lv.50'
     : `经验 ${player.xp.toLocaleString()} / ${xpNeed.toLocaleString()} · ${Math.floor(xpPct * 100)}%`;
@@ -1837,6 +1842,10 @@ function syncSettings() {
 
 function usePotion(kind) {
   if (!game) return;
+  if (kind === 'mp' && game.player.classId === 'warrior') {
+    hint('战士无需魔法');
+    return;
+  }
   game.useHotPotion(kind);
   if (isOpen('bag')) syncBag();
   syncHud();

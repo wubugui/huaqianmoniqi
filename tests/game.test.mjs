@@ -159,6 +159,11 @@ ok(Object.keys(GATHER_DEFS).length >= 3, 'herbalism and mining resource definiti
 ok(Object.values(CLASSES).every((cls) => cls.skills.every((skill) => skill.reqLevel > 0)), 'every skill has a learn level');
 ok(Object.values(CLASSES).every((cls) => cls.skills.every((skill) => Object.values(ITEMS).some((item) => item.type === 'skillbook' && item.skillId === skill.id && item.classId === cls.id))), 'every skill has a matching class book');
 ok(Object.keys(ITEMS).length >= 100, 'commercial item catalogue contains at least one hundred distinct items');
+ok(CLASSES.warrior.base.mp === 0
+  && CLASSES.warrior.skills.every((skill) => skill.mana === 0), 'warriors have no mana pool or mana-cost skills');
+ok(readFileSync(join(ROOT, 'index.html'), 'utf8').includes('vital-orb')
+  && readFileSync(join(ROOT, 'css/style.css'), 'utf8').includes('vital-orb')
+  && readFileSync(join(ROOT, 'css/style.css'), 'utf8').includes('no-mana'), 'HUD uses circular Mir-style HP/MP orbs and hides mana for warriors');
 ok(existsSync(join(ROOT, 'assets/game/ui/items_atlas.png')), 'per-item inventory icon atlas exists');
 ok(
   Object.keys(ITEMS).every((id) => existsSync(join(ROOT, 'assets/game/ui/items/icons', `${id}.png`))),
