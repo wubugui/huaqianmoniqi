@@ -257,7 +257,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 }
 .mir-face {
   position: absolute;
-  left: 2.2%; top: 16%; width: 10%; height: 58%;
+  left: 4.43%; top: 32.76%; width: 11.02%; height: 41.38%;
   padding: 0; border: 0; cursor: pointer; overflow: hidden;
   pointer-events: auto; z-index: 2;
   background:
@@ -274,7 +274,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 /* 单圆：左半血 / 右半蓝；贴图只留空井，颜色运行时填充 */
 .mir-vital {
   position: absolute;
-  left: 14.5%; top: 14%; width: 15.5%; height: 55%;
+  left: 19.10%; top: 27.09%; width: 13.95%; height: 52.71%;
   border-radius: 50%;
   overflow: hidden;
   pointer-events: none;
@@ -327,7 +327,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 
 .mir-exp {
   position: absolute;
-  left: 2.5%; top: 84%; width: 95%; height: 9%;
+  left: 4.04%; top: 90.15%; width: 93.74%; height: 4.93%;
   border: 0; overflow: hidden;
   pointer-events: none; z-index: 2;
   background: transparent;
@@ -344,9 +344,10 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 }
 .mir-belt {
   position: absolute;
-  left: 50.5%; top: 18%; width: 16.5%; height: 52%;
+  left: 59.19%; top: 33.25%; width: 15.25%; height: 41.13%;
   display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
-  gap: 3%;
+  column-gap: 7.28%;
+  row-gap: 16.17%;
   padding: 0;
   pointer-events: auto; z-index: 2;
 }
@@ -372,7 +373,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 /* 右侧空白系统区：自由叠放按钮 */
 .mir-sys {
   position: absolute;
-  left: 72.5%; top: 16%; width: 25%; height: 56%;
+  left: 78.68%; top: 28.57%; width: 18.58%; height: 50.00%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
@@ -399,11 +400,12 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .mir-sys button:hover { filter: brightness(1.18); border-color: #c8994d; }
 .mir-skills {
   position: absolute;
-  left: 32.0%; top: 18%; width: 16.5%; height: 52%;
+  left: 37.35%; top: 30.30%; width: 18.19%; height: 46.31%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 3%;
+  column-gap: 8.61%;
+  row-gap: 14.92%;
   pointer-events: auto; z-index: 3;
 }
 .mir-skills button {
