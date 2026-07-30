@@ -1250,7 +1250,9 @@ function syncHud() {
   $('#bar-xp').style.setProperty('--xp-pct', String(xpPct));
   $('#bar-xp').style.transform = `scaleX(${xpPct})`;
   $('#txt-hp').textContent = `${Math.ceil(player.hp)}/${Math.ceil(player.maxHp)}`;
-  $('#txt-mp').textContent = `${Math.ceil(player.mp)}/${Math.ceil(player.maxMp)}`;
+  $('#txt-mp').textContent = usesMana
+    ? `${Math.ceil(player.mp)}/${Math.ceil(player.maxMp)}`
+    : '';
   $('#txt-xp').textContent = player.level >= 50
     ? 'MAX'
     : `${Math.floor(xpPct * 100)}%`;

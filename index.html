@@ -106,26 +106,27 @@
         </aside>
 
         <div class="bottom-hud mir-hud hit" id="mir-hud">
-          <img class="mir-hud-frame" src="assets/game/ui/hud/bottom_frame.png?v=0.9.31" alt="" draggable="false" />
+          <img class="mir-hud-frame" src="assets/game/ui/hud/bottom_frame.png?v=0.9.32" alt="" draggable="false" />
 
           <button id="btn-character" class="mir-face" aria-label="角色信息">
             <img id="hud-portrait" alt="" />
             <span class="lv" id="hud-lv">1</span>
           </button>
 
-          <div class="mir-orb hp" aria-label="生命值">
-            <div class="mir-orb-liquid" id="bar-hp"></div>
-            <span class="mir-orb-text" id="txt-hp"></span>
-          </div>
-          <div class="mir-orb mp" id="vital-orb-mp" aria-label="魔法值">
-            <div class="mir-orb-liquid" id="bar-mp"></div>
-            <span class="mir-orb-text" id="txt-mp"></span>
+          <!-- 单圆：左半血 / 右半蓝；战士封右半 -->
+          <div class="mir-vital" id="mir-vital" aria-label="生命与魔法">
+            <div class="mir-half hp" aria-label="生命值">
+              <div class="mir-orb-liquid" id="bar-hp"></div>
+              <span class="mir-orb-text" id="txt-hp"></span>
+            </div>
+            <div class="mir-half mp" id="vital-orb-mp" aria-label="魔法值">
+              <div class="mir-orb-liquid" id="bar-mp"></div>
+              <span class="mir-orb-text" id="txt-mp"></span>
+              <div class="mir-mp-seal" aria-hidden="true"></div>
+            </div>
           </div>
 
-          <div class="mir-exp" aria-label="经验值">
-            <div class="mir-exp-fill" id="bar-xp"></div>
-            <span id="txt-xp">0%</span>
-          </div>
+          <div class="mir-skills" id="skill-bar" aria-label="技能栏"></div>
 
           <div class="mir-belt" aria-label="腰带">
             <button id="btn-potion-hp" class="mir-slot potion-hp" title="金创药 1"><b id="hp-pot-count">0</b></button>
@@ -136,17 +137,20 @@
             <button class="mir-slot empty" type="button" disabled aria-hidden="true"></button>
           </div>
 
-          <!-- 商业传奇底栏 6 键：包裹/状态/技能/组队/行会/系统 -->
+          <!-- 右侧空白区叠放系统按钮（贴图不画按钮） -->
           <nav class="mir-sys" aria-label="系统">
-            <button id="btn-bag" title="包裹"></button>
-            <button id="btn-char" title="状态"></button>
-            <button id="btn-skills" title="技能"></button>
-            <button id="btn-social" title="组队"></button>
-            <button id="btn-achievements" title="行会"></button>
-            <button id="btn-settings" title="系统"></button>
+            <button id="btn-bag" title="包裹">包裹</button>
+            <button id="btn-char" title="状态">状态</button>
+            <button id="btn-skills" title="技能">技能</button>
+            <button id="btn-social" title="组队">组队</button>
+            <button id="btn-achievements" title="行会">行会</button>
+            <button id="btn-settings" title="系统">系统</button>
           </nav>
 
-          <div class="mir-skills" id="skill-bar" aria-label="技能栏"></div>
+          <div class="mir-exp" aria-label="经验值">
+            <div class="mir-exp-fill" id="bar-xp"></div>
+            <span id="txt-xp">0%</span>
+          </div>
 
           <div class="mir-meta" aria-hidden="true">
             <strong id="hud-name">—</strong>

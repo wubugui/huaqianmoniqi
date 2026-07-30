@@ -237,13 +237,13 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .chat-compose button { border-right: 0; color: #e2bd73; cursor: pointer; }
 @keyframes log-in { from { opacity: 0; transform: translateX(8px); } }
 
-/* ===== Classic Mir bottom HUD — commercial 1:1 chrome (full-bleed) ===== */
+/* ===== Classic Mir bottom HUD — full-bleed frame plate v2 ===== */
 .mir-hud {
   position: absolute; z-index: 5;
   left: 0; right: 0; bottom: 0;
   width: 100%;
-  /* 与 bottom_frame.png 固有比例 1534:275 一致，禁止纵向压扁 */
-  aspect-ratio: 1534 / 275;
+  /* 与 bottom_frame.png 固有比例 1534:407 一致 */
+  aspect-ratio: 1534 / 407;
   height: auto;
   padding: 0; border: 0; background: transparent; box-shadow: none;
   display: block; transform: none;
@@ -257,7 +257,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 }
 .mir-face {
   position: absolute;
-  left: 2.48%; top: 28.0%; width: 8.28%; height: 57.45%;
+  left: 2.2%; top: 16%; width: 10%; height: 58%;
   padding: 0; border: 0; cursor: pointer; overflow: hidden;
   pointer-events: auto; z-index: 2;
   background:
@@ -270,54 +270,67 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
   background: rgba(18,10,4,.88); border: 1px solid #9a7743; color: #f0d28a;
   font-size: 9px; font-weight: 800; border-radius: 2px;
 }
-.mir-orb {
+
+/* 单圆：左半血 / 右半蓝；贴图只留空井，颜色运行时填充 */
+.mir-vital {
   position: absolute;
-  top: 28.91%;
-  width: 8.51%;
-  height: 51.82%;
+  left: 14.5%; top: 14%; width: 15.5%; height: 55%;
   border-radius: 50%;
   overflow: hidden;
   pointer-events: none;
   z-index: 2;
-  /* 空槽水晶井底，避免纯黑死块 */
-  background:
-    radial-gradient(circle at 38% 28%, rgba(90,80,70,.35), transparent 42%),
-    radial-gradient(circle at 50% 70%, #1a1410 0%, #070605 70%, #020201 100%);
-  box-shadow: inset 0 0 14px rgba(0,0,0,.9), inset 0 -8px 16px rgba(0,0,0,.45);
+  display: flex;
+  background: transparent;
 }
-.mir-orb.hp { left: 15.06%; }
-.mir-orb.mp { left: 27.71%; }
+.mir-half {
+  position: relative;
+  width: 50%; height: 100%;
+  overflow: hidden;
+}
 .mir-orb-liquid {
   position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
   transform-origin: bottom center;
   transform: scaleY(var(--orb-pct, 1));
   transition: transform .15s ease-out;
 }
-.mir-orb.hp .mir-orb-liquid {
+.mir-half.hp .mir-orb-liquid {
   background:
-    radial-gradient(circle at 38% 28%, rgba(255,190,150,.4), transparent 40%),
+    radial-gradient(circle at 40% 28%, rgba(255,190,150,.35), transparent 42%),
     linear-gradient(180deg, #f07858 0%, #c4281c 48%, #5a0c0a 100%);
 }
-.mir-orb.mp .mir-orb-liquid {
+.mir-half.mp .mir-orb-liquid {
   background:
-    radial-gradient(circle at 38% 28%, rgba(180,220,255,.4), transparent 40%),
+    radial-gradient(circle at 60% 28%, rgba(180,220,255,.35), transparent 42%),
     linear-gradient(180deg, #7ec0f5 0%, #2166ad 48%, #0c2d52 100%);
 }
 .mir-orb-text {
   position: absolute; inset: 0; z-index: 2;
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(7px, 0.75vw, 10px); font-weight: 800; color: #fff;
+  font-size: clamp(6px, 0.65vw, 9px); font-weight: 800; color: #fff;
   text-shadow: 0 1px 2px #000, 0 0 4px #000; pointer-events: none;
+  padding: 0 2px; text-align: center; line-height: 1.1;
 }
-.mir-hud.no-mana .mir-orb.mp,
+/* 战士：右半蓝槽金属封板 */
+.mir-mp-seal {
+  display: none;
+  position: absolute; inset: 0; z-index: 3;
+  pointer-events: none;
+  background:
+    linear-gradient(145deg, rgba(90,70,45,.55) 0%, rgba(28,22,16,.96) 38%, rgba(12,10,8,.98) 100%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.18) 0 2px, transparent 2px 5px);
+  box-shadow: inset 0 0 14px rgba(0,0,0,.85);
+}
+.mir-hud.no-mana .mir-mp-seal { display: block; }
+.mir-hud.no-mana .mir-half.mp .mir-orb-liquid,
+.mir-hud.no-mana .mir-half.mp .mir-orb-text { visibility: hidden; }
 .mir-hud.no-mana .mir-slot.potion-mp { visibility: hidden; pointer-events: none; }
+
 .mir-exp {
   position: absolute;
-  left: 46.35%; top: 24.36%; width: 18.58%; height: 7.64%;
+  left: 2.5%; top: 84%; width: 95%; height: 9%;
   border: 0; overflow: hidden;
   pointer-events: none; z-index: 2;
-  background: linear-gradient(180deg, #1a140e 0%, #0a0806 55%, #050403 100%);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,.9);
+  background: transparent;
 }
 .mir-exp-fill {
   height: 100%; width: 100%; transform-origin: left center;
@@ -331,8 +344,9 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 }
 .mir-belt {
   position: absolute;
-  left: 39.18%; top: 44.36%; width: 28.62%; height: 34.55%;
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.35%;
+  left: 54.5%; top: 18%; width: 16%; height: 52%;
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
+  gap: 2%;
   padding: 0;
   pointer-events: auto; z-index: 2;
 }
@@ -347,61 +361,68 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .mir-slot.potion-mp { background-size: 1200% 1000%; background-position: -200% 0; }
 .mir-slot.scroll { background-size: 1200% 1000%; background-position: -400% 0; }
 .mir-slot.empty {
-  background:
-    linear-gradient(180deg, rgba(40,32,24,.55), rgba(8,6,5,.9));
-  box-shadow: inset 0 0 6px rgba(0,0,0,.75);
+  background: transparent;
+  box-shadow: none;
   cursor: default; pointer-events: none;
 }
 .mir-slot b {
   position: absolute; right: 2px; bottom: 1px; min-width: 12px; padding: 0 2px;
   background: rgba(0,0,0,.72); color: #ffe19a; font-size: 8px; line-height: 1.2;
 }
+/* 右侧空白系统区：自由叠放按钮 */
 .mir-sys {
   position: absolute;
-  left: 0; top: 0; width: 100%; height: 100%;
-  display: block;
+  left: 72.5%; top: 16%; width: 25%; height: 56%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 6% 4%;
+  padding: 4% 5%;
+  box-sizing: border-box;
   pointer-events: none; z-index: 2;
 }
 .mir-sys button {
-  position: absolute;
-  top: 35.0%;
-  height: 48.0%;
-  width: 4.3%;
-  border: 0; background: transparent; cursor: pointer; padding: 0; min-width: 0;
+  position: relative;
+  left: auto; top: auto;
+  width: 100%; height: 100%;
+  border: 1px solid rgba(150,110,55,.55);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(55,42,28,.72), rgba(18,14,10,.88));
+  color: #e8d4a8;
+  font-size: clamp(8px, 0.7vw, 11px);
+  font-weight: 700;
+  cursor: pointer; padding: 0; min-width: 0;
   pointer-events: auto;
+  text-shadow: 0 1px 2px #000;
 }
-/* 六键中心按框内图标质心实位 */
-.mir-sys button:nth-child(1) { left: calc(71.90% - 2.15%); }
-.mir-sys button:nth-child(2) { left: calc(76.60% - 2.15%); }
-.mir-sys button:nth-child(3) { left: calc(81.19% - 2.15%); }
-.mir-sys button:nth-child(4) { left: calc(86.08% - 2.15%); }
-.mir-sys button:nth-child(5) { left: calc(91.40% - 2.15%); }
-.mir-sys button:nth-child(6) { left: calc(96.06% - 2.15%); }
-.mir-sys button:hover { filter: brightness(1.18); }
+.mir-sys button:hover { filter: brightness(1.18); border-color: #c8994d; }
 .mir-skills {
-  position: absolute; left: 39%; bottom: calc(100% + 6px); width: 30%;
-  display: flex; gap: 4px; justify-content: center; pointer-events: auto; z-index: 3;
+  position: absolute;
+  left: 32.5%; top: 20%; width: 20%; height: 48%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2%;
+  pointer-events: auto; z-index: 3;
 }
 .mir-skills button {
-  width: 46px; height: 46px; border: 1px solid #5f5547; background: #100d0a;
-  color: #f2eadc; cursor: pointer; position: relative; padding: 6px 2px 2px; font-size: 8px; line-height: 1.15;
+  width: 100%; height: 100%; border: 0; background: transparent;
+  color: #f2eadc; cursor: pointer; position: relative; padding: 4px 1px 2px; font-size: 7px; line-height: 1.1;
   overflow: hidden; isolation: isolate; text-shadow: 0 1px 3px #000;
 }
 .mir-skills button .skill-icon {
-  position: absolute; z-index: -2; inset: 2px; background: var(--skill-icon) center / cover no-repeat;
+  position: absolute; z-index: -2; inset: 3px; background: var(--skill-icon) center / cover no-repeat;
   filter: saturate(.94) contrast(1.06);
 }
 .mir-skills button::before {
-  content: ""; position: absolute; z-index: -1; inset: 2px; pointer-events: none;
+  content: ""; position: absolute; z-index: -1; inset: 3px; pointer-events: none;
   background: linear-gradient(180deg, rgba(3,2,2,.04) 35%, rgba(3,2,2,.88) 94%);
 }
 .mir-skills button .k { position: absolute; left: 3px; top: 1px; color: var(--gold-2); font-size: 8px; font-weight: 800; }
-.mir-skills button .skill-name { position: absolute; left: 2px; right: 2px; bottom: 2px; white-space: nowrap; font-weight: 700; font-size: 8px; }
+.mir-skills button .skill-name { position: absolute; left: 2px; right: 2px; bottom: 2px; white-space: nowrap; font-weight: 700; font-size: 7px; overflow: hidden; text-overflow: ellipsis; }
 .mir-skills button .mana { position: absolute; right: 2px; top: 12px; padding: 0 2px; background: rgba(5,20,37,.68); color: #89c4f4; font-size: 7px; }
 .mir-skills button .skill-level { position: absolute; right: 2px; top: 1px; color: #f0cf8b; font-size: 7px; }
-.mir-skills button.basic-attack .skill-icon {
-  background: radial-gradient(circle at 48% 42%, rgba(218,174,90,.46), rgba(91,52,20,.82) 45%, #130e0a 74%);
-}
+.mir-skills button.basic-attack { display: none; } /* 普通攻击走空格，不占四技能槽 */
 .mir-skills button .skill-glyph {
   position: absolute; z-index: 0; inset: 7px 0 auto; color: #ffe1a0; font-size: 18px; filter: drop-shadow(0 2px 3px #000);
 }
@@ -409,11 +430,11 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
   position: absolute; inset: 0; z-index: 2; background: rgba(5,4,3,.78);
   display: flex; align-items: center; justify-content: center; font: bold 13px Georgia, serif; color: #eee;
 }
-.mir-skills button.ready { border-color: #c8994d; }
-.mir-skills button.locked { filter: grayscale(.85); color: #777067; border-color: #342f29; }
+.mir-skills button.ready { filter: brightness(1.08); }
+.mir-skills button.locked { filter: grayscale(.85); color: #777067; }
 .mir-skills button.locked::before {
-  content: "未学"; position: absolute; z-index: 2; inset: 14px 2px auto;
-  padding: 2px 0; background: rgba(8,7,6,.86); color: #b09270; font-size: 8px;
+  content: "未学"; position: absolute; z-index: 2; inset: 35% 2px auto;
+  padding: 2px 0; background: rgba(8,7,6,.86); color: #b09270; font-size: 8px; text-align: center;
 }
 /* 角色名/战力/金币不再浮在场景上的半透明黑条；数据仍由 JS 写入供其他面板复用 */
 .mir-meta {
@@ -447,7 +468,7 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .quick-item b { position: absolute; right: 2px; bottom: 1px; min-width: 14px; padding: 1px 2px; background: rgba(0,0,0,.72); font-size: 8px; }
 
 /* windows */
-.bag { left: 12px; bottom: calc(100vw * 275 / 1534 + 12px); }
+.bag { left: 12px; bottom: calc(100vw * 407 / 1534 + 12px); }
 .equip-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 8px; }
 .equip-slot, .bag-slot {
   min-height: 58px; border: 1px solid #3f372d; background: #0e0c0a; display: flex; flex-direction: column;
@@ -940,7 +961,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 @media (max-width: 900px) {
   .class-card { min-height: 380px; }
   .class-card .art { height: 275px; }
-  .mir-hud { width: 100%; aspect-ratio: 1534 / 275; height: auto; }
+  .mir-hud { width: 100%; aspect-ratio: 1534 / 407; height: auto; }
   .mir-skills button { width: 40px; height: 40px; }
   .mir-meta { font-size: 0; }
 }
@@ -969,7 +990,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .boss-hud { top: 50px; width: min(360px, 78vw); }
   .mir-hud {
     left: 0; right: 0; width: 100%; transform: none;
-    bottom: 0; aspect-ratio: 1534 / 275; height: auto;
+    bottom: 0; aspect-ratio: 1534 / 407; height: auto;
     padding: 0; min-height: 0;
     display: block !important;
   }
