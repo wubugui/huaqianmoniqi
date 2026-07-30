@@ -100,11 +100,35 @@ def slice_equal(sheet: Image.Image, count: int = FRAME_COUNT) -> list[Image.Imag
     return [sheet.crop((i * cell_w, 0, (i + 1) * cell_w if i < count - 1 else w, h)) for i in range(count)]
 
 
+def density_trim(image: Image.Image, row_t: float = 0.025, col_t: float = 0.02) -> Image.Image:
+    """Drop sparse edge rows/cols so vertical noise cannot inflate bbox height."""
+    arr = np.asarray(image.convert("RGBA")).copy()
+    alpha = arr[..., 3] > 18
+    rows = np.where(alpha.mean(axis=1) > row_t)[0]
+    cols = np.where(alpha.mean(axis=0) > col_t)[0]
+    if len(rows) < 5 or len(cols) < 5:
+        return image
+    y0, y1 = max(0, int(rows[0]) - 4), min(image.height, int(rows[-1]) + 5)
+    x0, x1 = max(0, int(cols[0]) - 4), min(image.width, int(cols[-1]) + 5)
+    mask = np.zeros(arr.shape[:2], dtype=bool)
+    mask[y0:y1, x0:x1] = True
+    arr[..., 3] = np.where(mask, arr[..., 3], 0)
+    return Image.fromarray(arr, "RGBA")
+
+
 def ingest(path: Path, class_id: str, direction: str, action: str) -> dict:
     sheet = crop_label_bar(Image.open(path))
     # Prefer equal-width: Grok strips are usually regular; gap-slice often clips.
     raw = slice_equal(sheet, FRAME_COUNT)
-    keyed = [remove_debris(black_key(frame)) for frame in raw]
+    from commercial_anim_pipeline import keep_largest_subject
+
+    keyed = []
+    for frame in raw:
+        frame = black_key(frame)
+        frame = keep_largest_subject(frame)
+        frame = density_trim(frame)
+        frame = remove_debris(frame)
+        keyed.append(frame)
     locked = [place_bbox_foot(crop_subject(frame, pad=2), target_h=TARGET_H) for frame in keyed]
     write_pack(class_id, direction, action, locked)
     QA_PROC.mkdir(parents=True, exist_ok=True)
