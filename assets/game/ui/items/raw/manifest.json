@@ -1,0 +1,180 @@
+[
+  {
+    "id": "batch_01",
+    "ids": [
+      "hp_pot",
+      "hp_pot_b",
+      "mp_pot",
+      "mp_pot_b",
+      "recall",
+      "wood_sword",
+      "iron_sword",
+      "crescent_blade",
+      "steel_sword"
+    ]
+  },
+  {
+    "id": "batch_02",
+    "ids": [
+      "dragon_blade",
+      "apprentice_staff",
+      "crescent_staff",
+      "dragon_staff",
+      "spirit_sword",
+      "silver_serpent",
+      "celestial_talisman",
+      "cloth",
+      "heavy_armor"
+    ]
+  },
+  {
+    "id": "batch_03",
+    "ids": [
+      "mage_robe",
+      "soul_robe",
+      "magic_ring",
+      "power_ring",
+      "necklace",
+      "helmet",
+      "skull_helmet",
+      "iron_bracelet",
+      "mystic_bracelet"
+    ]
+  },
+  {
+    "id": "batch_04",
+    "ids": [
+      "pickaxe",
+      "deer_meat",
+      "wolf_pelt",
+      "zombie_arm",
+      "bone",
+      "wing_dust",
+      "boar_tusk",
+      "centipede_shell",
+      "orc_tooth"
+    ]
+  },
+  {
+    "id": "batch_05",
+    "ids": [
+      "temple_token",
+      "lord_seal",
+      "herb",
+      "copper_ore",
+      "silver_ore",
+      "black_iron",
+      "blessing_oil",
+      "book_slash",
+      "book_thrust"
+    ]
+  },
+  {
+    "id": "batch_06",
+    "ids": [
+      "book_fire_sword",
+      "book_rush",
+      "book_fireball",
+      "book_lightning",
+      "book_burst",
+      "book_shield",
+      "book_heal",
+      "book_talisman",
+      "book_poison"
+    ]
+  },
+  {
+    "id": "batch_07",
+    "ids": [
+      "book_summon",
+      "hp_pot_l",
+      "mp_pot_l",
+      "sun_potion",
+      "strong_sun_potion",
+      "random_scroll",
+      "dungeon_scroll",
+      "bronze_sword",
+      "bronze_axe"
+    ]
+  },
+  {
+    "id": "batch_08",
+    "ids": [
+      "soul_breaker",
+      "horse_chopper",
+      "judgement",
+      "ebony_sword",
+      "wand",
+      "bone_staff",
+      "half_moon",
+      "infinity_staff",
+      "dragon_pattern_sword"
+    ]
+  },
+  {
+    "id": "batch_09",
+    "ids": [
+      "light_armor",
+      "medium_armor",
+      "war_god_armor",
+      "demon_robe",
+      "ghost_robe",
+      "bronze_ring",
+      "horn_ring",
+      "blue_crystal_ring",
+      "pearl_ring"
+    ]
+  },
+  {
+    "id": "batch_10",
+    "ids": [
+      "coral_ring",
+      "red_gem_ring",
+      "platinum_ring",
+      "dragon_ring",
+      "traditional_necklace",
+      "ebony_necklace",
+      "tiger_tooth_necklace",
+      "phoenix_necklace",
+      "magnifier"
+    ]
+  },
+  {
+    "id": "batch_11",
+    "ids": [
+      "life_necklace",
+      "soul_necklace",
+      "green_necklace",
+      "leather_helmet",
+      "magic_helmet",
+      "taoist_helmet",
+      "black_iron_helmet",
+      "silver_bracelet",
+      "large_bracelet"
+    ]
+  },
+  {
+    "id": "batch_12",
+    "ids": [
+      "sturdy_glove",
+      "death_glove",
+      "ghost_glove",
+      "three_eye_bracelet",
+      "dragon_bracelet",
+      "deer_hide",
+      "wolf_fang",
+      "grave_dust",
+      "bat_wing"
+    ]
+  },
+  {
+    "id": "batch_13",
+    "ids": [
+      "boar_hide",
+      "venom_sac",
+      "orc_badge",
+      "guardian_core",
+      "lord_crystal"
+    ]
+  }
+]

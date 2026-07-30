@@ -1,0 +1,573 @@
+{
+  "cell": 128,
+  "cols": 12,
+  "rows": 10,
+  "count": 113,
+  "index": {
+    "hp_pot": {
+      "col": 0,
+      "row": 0,
+      "i": 0
+    },
+    "hp_pot_b": {
+      "col": 1,
+      "row": 0,
+      "i": 1
+    },
+    "mp_pot": {
+      "col": 2,
+      "row": 0,
+      "i": 2
+    },
+    "mp_pot_b": {
+      "col": 3,
+      "row": 0,
+      "i": 3
+    },
+    "recall": {
+      "col": 4,
+      "row": 0,
+      "i": 4
+    },
+    "wood_sword": {
+      "col": 5,
+      "row": 0,
+      "i": 5
+    },
+    "iron_sword": {
+      "col": 6,
+      "row": 0,
+      "i": 6
+    },
+    "crescent_blade": {
+      "col": 7,
+      "row": 0,
+      "i": 7
+    },
+    "steel_sword": {
+      "col": 8,
+      "row": 0,
+      "i": 8
+    },
+    "dragon_blade": {
+      "col": 9,
+      "row": 0,
+      "i": 9
+    },
+    "apprentice_staff": {
+      "col": 10,
+      "row": 0,
+      "i": 10
+    },
+    "crescent_staff": {
+      "col": 11,
+      "row": 0,
+      "i": 11
+    },
+    "dragon_staff": {
+      "col": 0,
+      "row": 1,
+      "i": 12
+    },
+    "spirit_sword": {
+      "col": 1,
+      "row": 1,
+      "i": 13
+    },
+    "silver_serpent": {
+      "col": 2,
+      "row": 1,
+      "i": 14
+    },
+    "celestial_talisman": {
+      "col": 3,
+      "row": 1,
+      "i": 15
+    },
+    "cloth": {
+      "col": 4,
+      "row": 1,
+      "i": 16
+    },
+    "heavy_armor": {
+      "col": 5,
+      "row": 1,
+      "i": 17
+    },
+    "mage_robe": {
+      "col": 6,
+      "row": 1,
+      "i": 18
+    },
+    "soul_robe": {
+      "col": 7,
+      "row": 1,
+      "i": 19
+    },
+    "magic_ring": {
+      "col": 8,
+      "row": 1,
+      "i": 20
+    },
+    "power_ring": {
+      "col": 9,
+      "row": 1,
+      "i": 21
+    },
+    "necklace": {
+      "col": 10,
+      "row": 1,
+      "i": 22
+    },
+    "helmet": {
+      "col": 11,
+      "row": 1,
+      "i": 23
+    },
+    "skull_helmet": {
+      "col": 0,
+      "row": 2,
+      "i": 24
+    },
+    "iron_bracelet": {
+      "col": 1,
+      "row": 2,
+      "i": 25
+    },
+    "mystic_bracelet": {
+      "col": 2,
+      "row": 2,
+      "i": 26
+    },
+    "pickaxe": {
+      "col": 3,
+      "row": 2,
+      "i": 27
+    },
+    "deer_meat": {
+      "col": 4,
+      "row": 2,
+      "i": 28
+    },
+    "wolf_pelt": {
+      "col": 5,
+      "row": 2,
+      "i": 29
+    },
+    "zombie_arm": {
+      "col": 6,
+      "row": 2,
+      "i": 30
+    },
+    "bone": {
+      "col": 7,
+      "row": 2,
+      "i": 31
+    },
+    "wing_dust": {
+      "col": 8,
+      "row": 2,
+      "i": 32
+    },
+    "boar_tusk": {
+      "col": 9,
+      "row": 2,
+      "i": 33
+    },
+    "centipede_shell": {
+      "col": 10,
+      "row": 2,
+      "i": 34
+    },
+    "orc_tooth": {
+      "col": 11,
+      "row": 2,
+      "i": 35
+    },
+    "temple_token": {
+      "col": 0,
+      "row": 3,
+      "i": 36
+    },
+    "lord_seal": {
+      "col": 1,
+      "row": 3,
+      "i": 37
+    },
+    "herb": {
+      "col": 2,
+      "row": 3,
+      "i": 38
+    },
+    "copper_ore": {
+      "col": 3,
+      "row": 3,
+      "i": 39
+    },
+    "silver_ore": {
+      "col": 4,
+      "row": 3,
+      "i": 40
+    },
+    "black_iron": {
+      "col": 5,
+      "row": 3,
+      "i": 41
+    },
+    "blessing_oil": {
+      "col": 6,
+      "row": 3,
+      "i": 42
+    },
+    "book_slash": {
+      "col": 7,
+      "row": 3,
+      "i": 43
+    },
+    "book_thrust": {
+      "col": 8,
+      "row": 3,
+      "i": 44
+    },
+    "book_fire_sword": {
+      "col": 9,
+      "row": 3,
+      "i": 45
+    },
+    "book_rush": {
+      "col": 10,
+      "row": 3,
+      "i": 46
+    },
+    "book_fireball": {
+      "col": 11,
+      "row": 3,
+      "i": 47
+    },
+    "book_lightning": {
+      "col": 0,
+      "row": 4,
+      "i": 48
+    },
+    "book_burst": {
+      "col": 1,
+      "row": 4,
+      "i": 49
+    },
+    "book_shield": {
+      "col": 2,
+      "row": 4,
+      "i": 50
+    },
+    "book_heal": {
+      "col": 3,
+      "row": 4,
+      "i": 51
+    },
+    "book_talisman": {
+      "col": 4,
+      "row": 4,
+      "i": 52
+    },
+    "book_poison": {
+      "col": 5,
+      "row": 4,
+      "i": 53
+    },
+    "book_summon": {
+      "col": 6,
+      "row": 4,
+      "i": 54
+    },
+    "hp_pot_l": {
+      "col": 7,
+      "row": 4,
+      "i": 55
+    },
+    "mp_pot_l": {
+      "col": 8,
+      "row": 4,
+      "i": 56
+    },
+    "sun_potion": {
+      "col": 9,
+      "row": 4,
+      "i": 57
+    },
+    "strong_sun_potion": {
+      "col": 10,
+      "row": 4,
+      "i": 58
+    },
+    "random_scroll": {
+      "col": 11,
+      "row": 4,
+      "i": 59
+    },
+    "dungeon_scroll": {
+      "col": 0,
+      "row": 5,
+      "i": 60
+    },
+    "bronze_sword": {
+      "col": 1,
+      "row": 5,
+      "i": 61
+    },
+    "bronze_axe": {
+      "col": 2,
+      "row": 5,
+      "i": 62
+    },
+    "soul_breaker": {
+      "col": 3,
+      "row": 5,
+      "i": 63
+    },
+    "horse_chopper": {
+      "col": 4,
+      "row": 5,
+      "i": 64
+    },
+    "judgement": {
+      "col": 5,
+      "row": 5,
+      "i": 65
+    },
+    "ebony_sword": {
+      "col": 6,
+      "row": 5,
+      "i": 66
+    },
+    "wand": {
+      "col": 7,
+      "row": 5,
+      "i": 67
+    },
+    "bone_staff": {
+      "col": 8,
+      "row": 5,
+      "i": 68
+    },
+    "half_moon": {
+      "col": 9,
+      "row": 5,
+      "i": 69
+    },
+    "infinity_staff": {
+      "col": 10,
+      "row": 5,
+      "i": 70
+    },
+    "dragon_pattern_sword": {
+      "col": 11,
+      "row": 5,
+      "i": 71
+    },
+    "light_armor": {
+      "col": 0,
+      "row": 6,
+      "i": 72
+    },
+    "medium_armor": {
+      "col": 1,
+      "row": 6,
+      "i": 73
+    },
+    "war_god_armor": {
+      "col": 2,
+      "row": 6,
+      "i": 74
+    },
+    "demon_robe": {
+      "col": 3,
+      "row": 6,
+      "i": 75
+    },
+    "ghost_robe": {
+      "col": 4,
+      "row": 6,
+      "i": 76
+    },
+    "bronze_ring": {
+      "col": 5,
+      "row": 6,
+      "i": 77
+    },
+    "horn_ring": {
+      "col": 6,
+      "row": 6,
+      "i": 78
+    },
+    "blue_crystal_ring": {
+      "col": 7,
+      "row": 6,
+      "i": 79
+    },
+    "pearl_ring": {
+      "col": 8,
+      "row": 6,
+      "i": 80
+    },
+    "coral_ring": {
+      "col": 9,
+      "row": 6,
+      "i": 81
+    },
+    "red_gem_ring": {
+      "col": 10,
+      "row": 6,
+      "i": 82
+    },
+    "platinum_ring": {
+      "col": 11,
+      "row": 6,
+      "i": 83
+    },
+    "dragon_ring": {
+      "col": 0,
+      "row": 7,
+      "i": 84
+    },
+    "traditional_necklace": {
+      "col": 1,
+      "row": 7,
+      "i": 85
+    },
+    "ebony_necklace": {
+      "col": 2,
+      "row": 7,
+      "i": 86
+    },
+    "tiger_tooth_necklace": {
+      "col": 3,
+      "row": 7,
+      "i": 87
+    },
+    "phoenix_necklace": {
+      "col": 4,
+      "row": 7,
+      "i": 88
+    },
+    "magnifier": {
+      "col": 5,
+      "row": 7,
+      "i": 89
+    },
+    "life_necklace": {
+      "col": 6,
+      "row": 7,
+      "i": 90
+    },
+    "soul_necklace": {
+      "col": 7,
+      "row": 7,
+      "i": 91
+    },
+    "green_necklace": {
+      "col": 8,
+      "row": 7,
+      "i": 92
+    },
+    "leather_helmet": {
+      "col": 9,
+      "row": 7,
+      "i": 93
+    },
+    "magic_helmet": {
+      "col": 10,
+      "row": 7,
+      "i": 94
+    },
+    "taoist_helmet": {
+      "col": 11,
+      "row": 7,
+      "i": 95
+    },
+    "black_iron_helmet": {
+      "col": 0,
+      "row": 8,
+      "i": 96
+    },
+    "silver_bracelet": {
+      "col": 1,
+      "row": 8,
+      "i": 97
+    },
+    "large_bracelet": {
+      "col": 2,
+      "row": 8,
+      "i": 98
+    },
+    "sturdy_glove": {
+      "col": 3,
+      "row": 8,
+      "i": 99
+    },
+    "death_glove": {
+      "col": 4,
+      "row": 8,
+      "i": 100
+    },
+    "ghost_glove": {
+      "col": 5,
+      "row": 8,
+      "i": 101
+    },
+    "three_eye_bracelet": {
+      "col": 6,
+      "row": 8,
+      "i": 102
+    },
+    "dragon_bracelet": {
+      "col": 7,
+      "row": 8,
+      "i": 103
+    },
+    "deer_hide": {
+      "col": 8,
+      "row": 8,
+      "i": 104
+    },
+    "wolf_fang": {
+      "col": 9,
+      "row": 8,
+      "i": 105
+    },
+    "grave_dust": {
+      "col": 10,
+      "row": 8,
+      "i": 106
+    },
+    "bat_wing": {
+      "col": 11,
+      "row": 8,
+      "i": 107
+    },
+    "boar_hide": {
+      "col": 0,
+      "row": 9,
+      "i": 108
+    },
+    "venom_sac": {
+      "col": 1,
+      "row": 9,
+      "i": 109
+    },
+    "orc_badge": {
+      "col": 2,
+      "row": 9,
+      "i": 110
+    },
+    "guardian_core": {
+      "col": 3,
+      "row": 9,
+      "i": 111
+    },
+    "lord_crystal": {
+      "col": 4,
+      "row": 9,
+      "i": 112
+    }
+  }
+}

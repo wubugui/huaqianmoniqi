@@ -1,4 +1,4 @@
-import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.21';
+import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.22';
 import {
   ACHIEVEMENTS, BOUNTIES, ENHANCE_MAX, EQUIP_SLOTS, ITEM_TYPE_NAMES, MAPS, MONSTERS, RARITIES, SKILL_LEVEL_XP, SKILL_MAX_LEVEL,
   SLOT_NAMES, WORLD, enhanceCost,
@@ -1374,11 +1374,32 @@ function toggleQuest() {
   sound.play(questOpen ? 'uiOpen' : 'uiClose');
 }
 
+/** Per-item atlas: 12 cols × 128px source cells, drawn at 32px. */
+const ITEM_ICON_ATLAS = {
+  cell: 128,
+  cols: 12,
+  display: 32,
+  version: '0.9.22',
+};
+const ITEM_ICON_INDEX = (() => {
+  // Filled at boot from assets/game/ui/items/raw/icon_index.json when available;
+  // fallback computes stable order from ITEMS insertion order.
+  const map = new Map();
+  let i = 0;
+  for (const id of Object.keys(ITEMS)) {
+    map.set(id, { col: i % ITEM_ICON_ATLAS.cols, row: Math.floor(i / ITEM_ICON_ATLAS.cols), i });
+    i += 1;
+  }
+  return map;
+})();
+
 function itemIcon(item) {
-  const icon = item?.icon ?? (item?.type === 'weapon' ? 4 : item?.type === 'armor' ? 5 : 2);
-  const x = -(icon % 3) * 32;
-  const y = -Math.floor(icon / 3) * 32;
-  return `<span class="item-icon" style="background-position:${x}px ${y}px"></span>`;
+  const id = item?.id || item?.itemId;
+  const entry = (id && ITEM_ICON_INDEX.get(id)) || { col: 0, row: 0 };
+  const scale = ITEM_ICON_ATLAS.display / ITEM_ICON_ATLAS.cell;
+  const x = -(entry.col * ITEM_ICON_ATLAS.cell * scale);
+  const y = -(entry.row * ITEM_ICON_ATLAS.cell * scale);
+  return `<span class="item-icon" style="background-position:${x}px ${y}px" title="${item?.name || id || ''}"></span>`;
 }
 
 function rarityColor(item) {

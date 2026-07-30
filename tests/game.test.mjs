@@ -104,6 +104,7 @@ const required = [
   'assets/game/manifest.json',
   'assets/game/ui/title-cover.png',
   'assets/game/ui/items_sheet.png',
+  'assets/game/ui/items_atlas.png',
   'assets/game/ui/icons/skill-slash.png',
   'assets/game/ui/icons/skill-thrust.png',
   'assets/game/ui/icons/skill-fire-sword.png',
@@ -158,6 +159,11 @@ ok(Object.keys(GATHER_DEFS).length >= 3, 'herbalism and mining resource definiti
 ok(Object.values(CLASSES).every((cls) => cls.skills.every((skill) => skill.reqLevel > 0)), 'every skill has a learn level');
 ok(Object.values(CLASSES).every((cls) => cls.skills.every((skill) => Object.values(ITEMS).some((item) => item.type === 'skillbook' && item.skillId === skill.id && item.classId === cls.id))), 'every skill has a matching class book');
 ok(Object.keys(ITEMS).length >= 100, 'commercial item catalogue contains at least one hundred distinct items');
+ok(existsSync(join(ROOT, 'assets/game/ui/items_atlas.png')), 'per-item inventory icon atlas exists');
+ok(
+  Object.keys(ITEMS).every((id) => existsSync(join(ROOT, 'assets/game/ui/items/icons', `${id}.png`))),
+  'every ITEMS entry has a dedicated 128px icon file',
+);
 ok(Object.values(ITEMS).every((item) => item.category && item.source && item.useHint && item.market), 'every item has category, source, use and market metadata');
 ok(Object.values(ITEMS).every((item) => !item.source.includes('后续猎区')), 'every item has a concrete configured acquisition source');
 ok(Object.values(ITEMS).filter((item) => item.type === 'quest').every((item) => item.market.includes('不可出售')), 'quest-item codex values match server-side sale protection');

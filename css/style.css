@@ -298,12 +298,14 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .quick { display: flex; gap: 4px; }
 .quick-item {
   width: 42px; height: 58px; position: relative; border: 1px solid #514638; background-color: #15110e;
-  background-image: url("../assets/game/ui/items_sheet.png?v=2"); background-size: 126px 84px; background-repeat: no-repeat;
+  background-image: url("../assets/game/ui/items_atlas.png?v=0.9.22");
+  background-size: 504px 420px; background-repeat: no-repeat;
   cursor: pointer; color: #fff;
 }
+/* Atlas cells: hp_pot (0,0), mp_pot (2,0), recall (4,0); display cell width 42 → step 42 */
 .quick-item.potion-hp { background-position: 0 0; }
-.quick-item.potion-mp { background-position: -42px 0; }
-.quick-item.scroll { background-position: -84px 0; }
+.quick-item.potion-mp { background-position: -84px 0; }
+.quick-item.scroll { background-position: -168px 0; }
 .quick-item span { position: absolute; left: 2px; top: 2px; font-size: 8px; color: #ffe19a; text-shadow: 0 1px 2px #000; }
 .quick-item b { position: absolute; right: 2px; bottom: 1px; min-width: 14px; padding: 1px 2px; background: rgba(0,0,0,.72); font-size: 8px; }
 .system-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -325,8 +327,10 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
 .equip-slot .plus { position: absolute; top: 2px; right: 3px; color: #f3be5e; font-weight: 800; }
 .equip-slot small { color: #796e60; font-size: 7px; }
 .item-icon {
-  width: 32px; height: 32px; flex: 0 0 auto; background-image: url("../assets/game/ui/items_sheet.png?v=2");
-  background-size: 96px 64px; background-repeat: no-repeat; border-radius: 2px;
+  width: 32px; height: 32px; flex: 0 0 auto;
+  background-image: url("../assets/game/ui/items_atlas.png?v=0.9.22");
+  /* atlas is 12×N cells at 128px → display scale 32/128 = 0.25 → 1536×1280 becomes 384×320 */
+  background-size: 384px 320px; background-repeat: no-repeat; border-radius: 2px;
 }
 .item-detail { min-height: 62px; display: grid; grid-template-columns: 42px 1fr; gap: 8px; align-items: center; padding: 7px; border: 1px solid #342c23; background: #100d0a; margin-bottom: 8px; color: #7f766b; font-size: 10px; }
 .item-detail > span:only-child { grid-column: 1 / -1; }
@@ -828,9 +832,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .portrait-box { width: 58px; height: 58px; }
   .system-nav { display: none; }
   .skills button { width: 48px; height: 52px; }
-  .quick-item { width: 36px; height: 52px; background-size: 108px 72px; }
-  .quick-item.potion-mp { background-position: -36px 0; }
-  .quick-item.scroll { background-position: -72px 0; }
+  .quick-item { width: 36px; height: 52px; background-size: 432px 360px; }
+  .quick-item.potion-mp { background-position: -72px 0; }
+  .quick-item.scroll { background-position: -144px 0; }
 }
 
 @media (max-width: 700px), (pointer: coarse), (max-height: 620px) and (max-width: 900px) {
