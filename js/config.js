@@ -216,7 +216,7 @@ export const MONSTERS = {
   },
   wolf: {
     id: 'wolf', name: '森林雪狼', unit: 'assets/game/mob/wolf.png',
-    hp: 135, atk: 14, def: 3, magDef: 1, ms: 125, range: 50, xp: 46, gold: [5, 16], aggro: 250, level: 8,
+    hp: 135, atk: 14, def: 3, magDef: 1, ms: 125, range: 50, xp: 46, gold: [5, 16], aggro: 150, level: 8,
     behavior: 'pack',
     drops: [
       { id: 'wolf_pelt', rate: 0.42 }, { id: 'hp_pot', rate: 0.14 }, { id: 'iron_bracelet', rate: 0.008 },
@@ -305,7 +305,7 @@ export const MONSTERS = {
   },
   wolf_alpha: {
     id: 'wolf_alpha', name: '雪狼头领', unit: 'assets/game/mob/wolf.png', animKey: 'wolf',
-    hp: 520, atk: 31, def: 9, magDef: 4, ms: 132, range: 56, xp: 190, gold: [24, 58], aggro: 300, level: 18,
+    hp: 520, atk: 31, def: 9, magDef: 4, ms: 132, range: 56, xp: 190, gold: [24, 58], aggro: 180, level: 18,
     elite: true, behavior: 'pack',
     drops: [
       { id: 'wolf_pelt', rate: 1 }, { id: 'wolf_fang', rate: 1 }, { id: 'tiger_tooth_necklace', rate: 0.055 },

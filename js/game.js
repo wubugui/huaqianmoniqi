@@ -2,7 +2,7 @@ import {
   ACHIEVEMENTS, BOUNTIES, CLASSES, COMBAT_RULES, ENHANCE_MAX, EQUIP_SLOTS, GATHER_DEFS, ITEMS, MAPS, MONSTERS, QUESTS, RARITIES, RECIPES,
   SCENERY, SHOP_TOWN, SKILL_MAX_LEVEL, TILES, VISUAL_SCALE, WALL_MATERIALS, WORLD, ZONE_VISUALS, enhanceCost,
   isWorldBlocked, isWorldPositionOpen,
-} from './config.js?v=0.9.9';
+} from './config.js?v=0.9.19';
 import { clamp, dist, dist2, moveToward, loadImage, randInt } from './utils.js';
 import {
   Player, Monster, Npc, Drop, Projectile, Effect, FloatingText, Pet, createItemEntry, normalizeItemEntry,
@@ -86,6 +86,11 @@ export class Game {
     this.lastServerCombatVersion = 0;
     this.lastServerAuthorityVersion = 0;
     this.worldState = null;
+    this._moveBlockers = [];
+    this._decorCells = new Map();
+    this._decorCellSize = T * 4;
+    this.persistDirty = false;
+    this.lastPersistAt = -999;
     this.seenChatMessageIds = new Set();
     /** @type {{ run: boolean, moveX: number, moveY: number }} */
     this.input = { run: false, moveX: 0, moveY: 0 };
@@ -223,17 +228,23 @@ export class Game {
     return { x: start.x * T, y: start.y * T };
   }
 
-  bodyBlocked(ent, x, y, oldX = ent.x, oldY = ent.y) {
-    const radius = ent.r || (ent.type === 'player' ? COMBAT_RULES.playerBodyRadius : COMBAT_RULES.monsterBodyRadius);
-    const blockers = [
-      ...this.npcs,
-      ...this.monsters.filter((unit) => unit.alive),
-      ...this.remotePlayers.filter((unit) => unit.alive),
-      ...this.networkPets.filter((unit) => unit.alive),
-    ];
+  rebuildMoveBlockers() {
+    const blockers = this._moveBlockers;
+    blockers.length = 0;
+    for (const npc of this.npcs) blockers.push(npc);
+    for (const unit of this.monsters) if (unit.alive) blockers.push(unit);
+    for (const unit of this.remotePlayers) if (unit.alive) blockers.push(unit);
+    for (const unit of this.networkPets) if (unit.alive) blockers.push(unit);
     if (this.player?.alive) blockers.push(this.player);
     if (this.player?.pet?.alive) blockers.push(this.player.pet);
-    for (const blocker of blockers) {
+    return blockers;
+  }
+
+  bodyBlocked(ent, x, y, oldX = ent.x, oldY = ent.y) {
+    const radius = ent.r || (ent.type === 'player' ? COMBAT_RULES.playerBodyRadius : COMBAT_RULES.monsterBodyRadius);
+    const blockers = this._moveBlockers;
+    for (let i = 0; i < blockers.length; i++) {
+      const blocker = blockers[i];
       if (!blocker || blocker === ent || blocker.id === ent.id) continue;
       const minimum = radius + (blocker.r || 16) - 2;
       const nextDistance = Math.hypot(x - blocker.x, y - blocker.y);
@@ -314,6 +325,14 @@ export class Game {
     this.minimapForestDecors = this.decors.filter(
       (decor) => decor.ecology === 'canopy' || decor.ecology === 'forest-edge',
     );
+    this._decorCellSize = T * 4;
+    this._decorCells = new Map();
+    for (const decor of this.decors) {
+      const key = `${Math.floor(decor.x / this._decorCellSize)},${Math.floor(decor.y / this._decorCellSize)}`;
+      const bucket = this._decorCells.get(key);
+      if (bucket) bucket.push(decor);
+      else this._decorCells.set(key, [decor]);
+    }
     // Pathfinding samples the exact same continuous collision function as live
     // client/server movement. Waypoints can no longer be routed through a tree
     // merely because the old decor rasterizer exempted a nominal road tile.
@@ -1149,12 +1168,18 @@ export class Game {
     target.hitT = 0.16;
     if (attacker?.type === 'player' && target.type === 'monster'
       && ['pack', 'swarm'].includes(target.behavior)) {
+      // Cap pack pull — valley wolves otherwise all pathfind at once and hitch.
+      const allies = [];
       for (const ally of this.monsters) {
-        if (!ally.alive || ally === target || ally.behavior !== target.behavior || dist(ally, target) > 190) continue;
-        ally.target = attacker;
+        if (!ally.alive || ally === target || ally.behavior !== target.behavior) continue;
+        const d = dist(ally, target);
+        if (d > 160) continue;
+        allies.push({ ally, d });
       }
+      allies.sort((a, b) => a.d - b.d);
+      for (let i = 0; i < Math.min(5, allies.length); i++) allies[i].ally.target = attacker;
     }
-    this.shake = Math.min(12, this.shake + (crit ? 6 : target.elite ? 3 : 1.5));
+    this.shake = Math.min(7, this.shake + (crit ? 3.5 : target.elite ? 2 : 0.9));
     this.impactT = Math.max(this.impactT, crit ? 0.16 : target.elite ? 0.11 : 0.07);
     this.spawnEffect(
       target.x,
@@ -1221,7 +1246,7 @@ export class Game {
         this.onHint?.('任务目标完成，回比奇城找卫士队长复命');
         this.log(`「${q.name}」目标完成，等待复命`, 'quest');
         this.onQuest?.();
-        this.persist();
+        this.persist(false);
       }
       return true;
     }
@@ -2230,14 +2255,25 @@ export class Game {
     this.persist();
   }
 
-  persist() {
+  persist(force = true) {
+    // localStorage save validates twice and stalls the combat frame on Pages,
+    // especially while clearing wolf packs in 毒蛇山谷.
+    if (!force && this.time - this.lastPersistAt < 2.5) {
+      this.persistDirty = true;
+      return false;
+    }
     const p = this.player;
-    saveGame({
+    const ok = saveGame({
       player: p.serialize(),
       mapId: this.mapId,
       px: p.x,
       py: p.y,
     });
+    if (ok) {
+      this.lastPersistAt = this.time;
+      this.persistDirty = false;
+    }
+    return ok;
   }
 
   setRun(on) {
@@ -2654,10 +2690,12 @@ export class Game {
     }
     this.player.playTime += dt;
     this.saveTimer += dt;
-    if (this.saveTimer > 12) { this.saveTimer = 0; this.persist(); }
+    if (this.saveTimer > 12) { this.saveTimer = 0; this.persist(true); }
+    else if (this.persistDirty && this.time - this.lastPersistAt >= 2.5) this.persist(true);
 
     const p = this.player;
     if (!p.alive) return;
+    this.rebuildMoveBlockers();
     this.comboT = Math.max(0, this.comboT - dt);
     if (this.comboT <= 0) this.combo = 0;
     this.shake = Math.max(0, this.shake - 18 * dt);
@@ -2902,6 +2940,7 @@ export class Game {
     }
 
     // monsters
+    let packPursuitSlots = 6;
     for (const m of this.monsters) {
       m.hitT = Math.max(0, (m.hitT || 0) - dt);
       this.decayVisualRecoil(m, dt);
@@ -2985,8 +3024,25 @@ export class Game {
         continue;
       }
 
-      const aggroTarget = (!this.map.safe && m.behavior !== 'passive' && dist(m, p) < m.aggro) ? p : null;
-      if (aggroTarget) m.target = aggroTarget;
+      const inAggro = !this.map.safe && m.behavior !== 'passive' && dist(m, p) < m.aggro;
+      if (inAggro) {
+        const packLike = m.behavior === 'pack' || m.behavior === 'swarm';
+        if (!packLike) {
+          m.target = p;
+        } else if (packPursuitSlots > 0) {
+          packPursuitSlots -= 1;
+          m.target = p;
+        } else if (m.target === p && dist(m, p) > m.range + 48) {
+          m.target = null;
+        }
+      }
+      // Skip off-screen wanderers — valley vegetation + idle wolf pathing was a hitch source.
+      const onScreen = Math.abs(m.x - this.cam.x) < this.viewW * 0.7
+        && Math.abs(m.y - this.cam.y) < this.viewH * 0.7;
+      if (!onScreen && !(m.target && m.target.alive) && !m.boss) {
+        this.advanceMonsterAnim(m, false, dt);
+        continue;
+      }
       if (m.target && m.target.alive) {
         this.faceToward(m, m.target.x, m.target.y);
         const targetDistance = dist(m, m.target);
@@ -4186,9 +4242,34 @@ export class Game {
     // 装饰 + NPC + 单位 统一 Y 排序
     const list = [];
     for (const face of wallFaces) list.push({ kind: 'wall', y: (face.ty + 1) * T + 6, face });
-    for (const d of this.decors || []) {
-      if (this.worldPointInView(d.x, d.y, Math.max(96, d.h + 36))) {
-        list.push({ kind: 'decor', y: d.y, d });
+    const cell = this._decorCellSize || T * 4;
+    const margin = 180;
+    const minX = this.cam.x - this.viewW / 2 - margin;
+    const maxX = this.cam.x + this.viewW / 2 + margin;
+    const minY = this.cam.y - this.viewH / 2 - margin;
+    const maxY = this.cam.y + this.viewH / 2 + margin;
+    const minCellX = Math.floor(minX / cell);
+    const maxCellX = Math.floor(maxX / cell);
+    const minCellY = Math.floor(minY / cell);
+    const maxCellY = Math.floor(maxY / cell);
+    const decorCells = this._decorCells;
+    if (decorCells?.size) {
+      for (let cy = minCellY; cy <= maxCellY; cy++) {
+        for (let cx = minCellX; cx <= maxCellX; cx++) {
+          const bucket = decorCells.get(`${cx},${cy}`);
+          if (!bucket) continue;
+          for (const d of bucket) {
+            if (this.worldPointInView(d.x, d.y, Math.max(96, d.h + 36))) {
+              list.push({ kind: 'decor', y: d.y, d });
+            }
+          }
+        }
+      }
+    } else {
+      for (const d of this.decors || []) {
+        if (this.worldPointInView(d.x, d.y, Math.max(96, d.h + 36))) {
+          list.push({ kind: 'decor', y: d.y, d });
+        }
       }
     }
     for (const n of this.npcs) list.push({ kind: 'npc', y: n.y, n });
@@ -4231,35 +4312,43 @@ export class Game {
           ctx.restore();
           continue;
         }
+        const groundCover = d.ecology === 'understory' || d.ecology === 'road-verge';
         const shadowW = d.shadowW
           || (['house_a', 'house_b'].includes(d.id) ? Math.min(118, d.h * 0.28) : Math.min(54, d.h * 0.19));
         const isGrove = d.id.startsWith('grove_');
-        ctx.fillStyle = isGrove ? 'rgba(4,6,3,0.15)' : 'rgba(4,3,2,0.24)';
-        ctx.beginPath();
-        ctx.ellipse(foot.x, foot.y + 3, shadowW, Math.max(5, shadowW * (isGrove ? 0.15 : 0.22)), 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (!groundCover) {
+          ctx.fillStyle = isGrove ? 'rgba(4,6,3,0.15)' : 'rgba(4,3,2,0.24)';
+          ctx.beginPath();
+          ctx.ellipse(foot.x, foot.y + 3, shadowW, Math.max(5, shadowW * (isGrove ? 0.15 : 0.22)), 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
         const treeFamily = ['tree', 'pine'].includes(d.id)
           || d.id.startsWith('tree_')
           || d.id.startsWith('pine_');
-        const canOcclude = treeFamily
+        // Ground cover never occludes the player — skip expensive fade tests in valley.
+        const canOcclude = !groundCover && (
+          treeFamily
           || ['house_a', 'house_b'].includes(d.id)
-          || d.fadeRadius > 0;
-        const fadeRadius = d.fadeRadius || (['house_a', 'house_b'].includes(d.id) ? 105 : 56);
-        const decorDrawW = img?.width && img?.height
-          ? d.h * (img.width / img.height)
-          : d.h * 0.86;
-        const decorTop = d.y - d.h * (d.anchor ?? 0.94);
-        const playerTop = this.player.y - VISUAL_SCALE.player * 0.9;
-        const playerBottom = this.player.y + 8;
-        const overlapsVisibleSprite = Math.abs(this.player.x - d.x) <= decorDrawW * 0.52 + 18
-          && playerBottom >= decorTop + d.h * 0.03
-          && playerTop <= d.y + 12;
-        const occludingPlayer = canOcclude
-          && this.player.y < d.y
-          && (
-            Math.hypot(this.player.x - d.x, this.player.y - d.y) < fadeRadius
-            || overlapsVisibleSprite
-          );
+          || d.fadeRadius > 0
+        );
+        let occludingPlayer = false;
+        if (canOcclude) {
+          const fadeRadius = d.fadeRadius || (['house_a', 'house_b'].includes(d.id) ? 105 : 56);
+          const decorDrawW = img?.width && img?.height
+            ? d.h * (img.width / img.height)
+            : d.h * 0.86;
+          const decorTop = d.y - d.h * (d.anchor ?? 0.94);
+          const playerTop = this.player.y - VISUAL_SCALE.player * 0.9;
+          const playerBottom = this.player.y + 8;
+          const overlapsVisibleSprite = Math.abs(this.player.x - d.x) <= decorDrawW * 0.52 + 18
+            && playerBottom >= decorTop + d.h * 0.03
+            && playerTop <= d.y + 12;
+          occludingPlayer = this.player.y < d.y
+            && (
+              Math.hypot(this.player.x - d.x, this.player.y - d.y) < fadeRadius
+              || overlapsVisibleSprite
+            );
+        }
         ctx.save();
         if (occludingPlayer) {
           localPlayerOccludedByDecor = true;

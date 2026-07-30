@@ -52,10 +52,9 @@ export function saveGame(payload) {
       worldLayoutVersion: WORLD.layoutVersion,
       ts: Date.now(),
     };
+    // RHS runs before assignment, so checksum covers the payload without itself.
     record.checksum = checksum(JSON.stringify(record));
-    const encoded = JSON.stringify(record);
-    localStorage.setItem(SAVE_KEY, encoded);
-    if (!parseAndValidate(localStorage.getItem(SAVE_KEY))) throw new Error('save verification failed');
+    localStorage.setItem(SAVE_KEY, JSON.stringify(record));
     return true;
   } catch {
     return false;

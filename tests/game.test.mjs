@@ -394,6 +394,9 @@ ok(mainSource.includes("if (key === 'm') openPanel('world-map')"), 'M opens the 
 ok(mainSource.includes('findWorldRoute') && mainSource.includes('game.approachPortal(portal)'), 'world map routes across real in-game portals');
 ok(mainSource.includes('onRequestMapChange') && mainSource.includes('portalLoading') && mainSource.includes('awaitingMapAck'), 'cross-map auto-route waits out portal ack before publishing moves');
 ok(mainSource.includes('spaceAttackArmed') && mainSource.includes('triggerBasicAttack'), 'basic attack is edge-triggered and blurs focused controls');
+ok(readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('rebuildMoveBlockers')
+  && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('packPursuitSlots')
+  && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('_decorCells'), 'valley combat uses blocker cache, pack pursuit caps and decor spatial cull');
 ok(mainSource.includes('event.repeat') && mainSource.includes('basic.onkeydown'), 'Space key-repeat and focused skill-button Space clicks are suppressed');
 ok(readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('onRequestMapChange')
   && readFileSync(join(ROOT, 'js/game.js'), 'utf8').includes('awaitingMapAck'), 'portal use requests server map change before local loadMap');
