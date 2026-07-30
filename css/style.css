@@ -415,15 +415,16 @@ kbd { border: 1px solid #5c4b35; background: #110e0b; color: #d5c4a5; border-rad
   content: "未学"; position: absolute; z-index: 2; inset: 14px 2px auto;
   padding: 2px 0; background: rgba(8,7,6,.86); color: #b09270; font-size: 8px;
 }
+/* 角色名/战力/金币不再浮在场景上的半透明黑条；数据仍由 JS 写入供其他面板复用 */
 .mir-meta {
-  position: absolute; left: 1.2%; bottom: calc(100% + 4px);
-  display: flex; gap: 8px; align-items: baseline;
-  padding: 2px 8px; background: rgba(8,6,4,.72); border: 1px solid rgba(120,90,45,.45);
-  font-size: 11px; color: #cbbba0; white-space: nowrap; pointer-events: none; z-index: 3;
+  position: absolute; width: 1px; height: 1px; left: -9999px; top: 0;
+  overflow: hidden; opacity: 0; pointer-events: none;
+  display: block; padding: 0; border: 0; background: transparent;
+  font-size: 0; white-space: nowrap; z-index: 0;
 }
-.mir-meta strong { color: #f4ead9; font-size: 12px; }
-.mir-meta .power { color: #d78152; }
-.mir-meta .gold { color: #e7c36a; }
+.mir-meta strong,
+.mir-meta .power,
+.mir-meta .gold { color: inherit; font-size: inherit; }
 .mir-ghost-btn { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden; }
 
 /* legacy aliases kept for mobile CSS that still references old names */
@@ -941,7 +942,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .class-card .art { height: 275px; }
   .mir-hud { width: 100%; aspect-ratio: 1534 / 275; height: auto; }
   .mir-skills button { width: 40px; height: 40px; }
-  .mir-meta { font-size: 10px; }
+  .mir-meta { font-size: 0; }
 }
 
 @media (max-width: 700px), (pointer: coarse), (max-height: 620px) and (max-width: 900px) {
