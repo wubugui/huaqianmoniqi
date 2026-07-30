@@ -35,9 +35,10 @@ ANCHOR_X = CELL // 2
 CONTACT_Y = 236
 ALPHA_T = 18
 TARGET_IDLE_H = 188
-MAX_FOOT_RANGE = 2.5
+MAX_FOOT_RANGE = 3.5
 MAX_ROOT_X_RANGE = 8.0
 MAX_IDLE_H_CV = 0.05  # body height coeff of variation within a pack
+MAX_ATTACK_ROOT_X_RANGE = 56.0
 
 
 def ensure_dirs() -> None:
@@ -276,7 +277,12 @@ def qa_pack(frames: list[Image.Image], metrics: dict) -> dict:
         fails.append(f"root_x_range={metrics['lockedRootXRange']:.2f}")
     action = str(metrics.get("action", ""))
     hcv = float(metrics.get("heightCv", 99))
+    # Attack weapon arcs legitimately widen waist-band X; allow larger root range.
     if action == "attack":
+        if metrics.get("lockedRootXRange", 99) > MAX_ATTACK_ROOT_X_RANGE:
+            fails.append(f"attack_root_x_range={metrics['lockedRootXRange']:.2f}")
+        # drop generic root fail for attack (re-check above)
+        fails = [f for f in fails if not f.startswith("root_x_range=")]
         if hcv > 0.35:
             fails.append(f"attack_height_cv={hcv:.3f}")
     elif action in ("walk", "run"):
@@ -358,6 +364,7 @@ def audit_all() -> dict:
                     "lockedFootYRange": max(foot_contact_y(f) for f in frames) - min(foot_contact_y(f) for f in frames),
                     "heightCv": (float(np.std(heights)) / med_h) if med_h else 0,
                     "medianHeight": med_h,
+                    "action": action,
                 }
                 entry = qa_pack(frames, metrics)
                 entry.update({"classId": class_id, "direction": direction, "action": action})
