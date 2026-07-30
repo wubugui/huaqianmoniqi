@@ -1,7 +1,7 @@
 import {
   CLASSES, ENHANCE_MAX, EQUIP_SLOTS, ITEMS, LEVEL_XP, MONSTERS, RARITIES, SKILL_LEVEL_XP, SKILL_MAX_LEVEL,
   SLOT_TYPES,
-} from './config.js?v=0.9.9';
+} from './config.js?v=0.9.19';
 import { uid, clamp, randInt } from './utils.js';
 
 function createCharacterId() {
