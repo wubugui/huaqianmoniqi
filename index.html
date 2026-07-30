@@ -7,7 +7,8 @@
   <meta name="description" content="玛法余烬：三职业、自由打宝、装备强化与沃玛教主挑战的复古 2D 动作角色扮演游戏。" />
   <title>玛法余烬 · 沙城纪元</title>
   <link rel="preload" as="image" href="assets/game/ui/title-cover.png" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preload" as="image" href="assets/game/map/world-map-v1.png" />
+  <link rel="stylesheet" href="css/style.css?v=0.9.16" />
 </head>
 <body>
   <div id="app">
@@ -26,11 +27,11 @@
         </div>
         <p id="load-status" class="load-status"><span></span>正在整备玛法大陆…</p>
         <div class="menu-features" aria-label="游戏特色">
-          <span>三职业分化</span><i></i><span>自由打宝</span><i></i><span>部位强化</span><i></i><span>五大区域</span>
+          <span>三职业分化</span><i></i><span>自由打宝</span><i></i><span>本地联机</span><i></i><span>九大区域</span>
         </div>
       </main>
       <button id="btn-menu-help" class="corner-btn">玩法说明</button>
-      <span class="version">EMBER BUILD 0.3</span>
+      <span class="version">EMBER BUILD 0.9</span>
     </section>
 
     <section id="screen-pick" class="screen">
@@ -56,16 +57,29 @@
       <canvas id="game-canvas"></canvas>
       <div id="hud">
         <div class="top-status">
-          <div class="map-name" id="map-name">比奇城</div>
+          <button class="map-name" id="map-name" type="button" title="打开世界地图（M）" aria-label="打开世界地图">比奇城</button>
           <div id="safe-label" class="safe-label">安全区</div>
+          <div id="pk-label" class="pk-label">白名 · PK 0</div>
           <div id="clock-label" class="clock-label">玛法历 001</div>
         </div>
+        <div id="online-status" class="online-status">本地服连接中…</div>
         <div class="hint" id="sys-hint" role="status"></div>
         <div id="boss-hud" class="boss-hud hidden">
           <div class="boss-meta"><span id="boss-name">沃玛教主</span><span id="boss-phase">常态</span></div>
-          <div class="boss-track"><div id="boss-hp"></div></div>
+          <div class="boss-track"><div id="boss-hp"></div><span id="boss-hp-text"></span></div>
+        </div>
+        <div id="war-hud" class="war-hud hidden">
+          <strong id="war-title">沙巴克攻城战</strong>
+          <span id="war-copy">皇宫占领进度 0%</span>
+          <div class="war-track"><i id="war-progress"></i></div>
+          <button id="btn-siege-attack" class="btn tiny danger hidden">攻击城门</button>
         </div>
         <div id="combo-hud" class="combo-hud hidden"><strong id="combo-count">3</strong><span>连斩</span></div>
+        <div id="route-hud" class="route-hud hit hidden" aria-live="polite">
+          <div><span>自动寻路</span><strong id="route-title">前往目的地</strong><small id="route-step"></small></div>
+          <button id="btn-route-next" class="btn tiny">继续</button>
+          <button id="btn-route-cancel" class="icon-btn" aria-label="取消自动寻路">×</button>
+        </div>
 
         <aside id="quest-panel" class="panel quest hit">
           <div class="panel-head compact">
@@ -76,6 +90,20 @@
         </aside>
 
         <aside id="combat-log" class="combat-log hit" aria-label="战斗记录"></aside>
+        <aside id="chat-panel" class="chat-panel hit" aria-label="聊天">
+          <div id="chat-messages" class="chat-messages"></div>
+          <div class="chat-compose">
+            <select id="chat-channel" aria-label="聊天频道">
+              <option value="nearby">附近</option>
+              <option value="world">世界</option>
+              <option value="team">组队</option>
+              <option value="guild">行会</option>
+              <option value="whisper">私聊</option>
+            </select>
+            <input id="chat-input" maxlength="100" autocomplete="off" enterkeyhint="send" placeholder="Enter 发送消息" />
+            <button id="btn-chat-send">发送</button>
+          </div>
+        </aside>
 
         <div class="bottom-hud hit">
           <button id="btn-character" class="portrait-box" aria-label="角色信息">
@@ -91,7 +119,7 @@
             </div>
             <div class="bar hp"><div id="bar-hp"></div><span id="txt-hp"></span></div>
             <div class="bar mp"><div id="bar-mp"></div><span id="txt-mp"></span></div>
-            <div class="bar xp"><div id="bar-xp"></div><span id="txt-xp"></span></div>
+            <div class="bar xp" aria-label="角色经验"><div id="bar-xp"></div><span id="txt-xp">经验 0 / 100</span></div>
           </div>
           <div class="skills" id="skill-bar" aria-label="技能栏"></div>
           <div class="quick">
@@ -102,7 +130,12 @@
           <nav class="system-nav">
             <button id="btn-bag">背包<kbd>B</kbd></button>
             <button id="btn-char">角色<kbd>C</kbd></button>
+            <button id="btn-skills">技能<kbd>K</kbd></button>
             <button id="btn-achievements">成就<kbd>Y</kbd></button>
+            <button id="btn-pk-mode">和平<kbd>P</kbd></button>
+            <button id="btn-social">社交<kbd>F</kbd></button>
+            <button id="btn-codex">图鉴<kbd>I</kbd></button>
+            <button id="btn-world-map">地图<kbd>M</kbd></button>
             <button id="btn-settings">设置<kbd>Esc</kbd></button>
           </nav>
         </div>
@@ -134,8 +167,20 @@
             <div><h4 id="char-name">—</h4><p id="char-title">—</p><strong id="char-power">战力 0</strong></div>
           </div>
           <div id="stat-grid" class="stat-grid"></div>
-          <div class="forge-head"><h4>部位强化</h4><span>比奇城内可用 · +7 以上失败会降级</span></div>
+          <div class="mastery-head"><h4>技能修炼</h4><span>研读技能书后，通过实战提升熟练度</span></div>
+          <div id="skill-mastery" class="skill-mastery"></div>
+          <div class="forge-head"><h4>武器升级</h4><span>最高 +7 · 冲击 +4 起失败会碎裂武器</span></div>
           <div id="forge-list" class="forge-list"></div>
+        </section>
+
+        <section id="skill-learning" class="panel window skill-learning hit hidden" aria-label="技能学习">
+          <div class="panel-head">
+            <div><span class="panel-kicker">SKILL MANUAL</span><h3>技能学习与修炼</h3></div>
+            <button id="btn-skills-close" class="icon-btn" aria-label="关闭">×</button>
+          </div>
+          <div id="skill-learning-summary" class="skill-learning-summary"></div>
+          <div id="skill-learning-list" class="skill-learning-list"></div>
+          <p class="skill-learning-note">普通攻击从 1 级即可使用；基本剑术、火球术、治愈术遵循经典规则，于 7 级研读。7—19 级技能书可在比奇书店购买，也能由怪物掉落；25 级以上技能书主要来自精英、首领与玩家交易。</p>
         </section>
 
         <section id="achievements" class="panel window achievements hit hidden" aria-label="成就">
@@ -147,12 +192,79 @@
           <div id="achievement-list" class="achievement-list"></div>
         </section>
 
+        <section id="social" class="panel window social hit hidden" aria-label="社交">
+          <div class="panel-head">
+            <div><span class="panel-kicker">SOCIAL</span><h3>好友 · 队伍 · 行会 · 交易</h3></div>
+            <button id="btn-social-close" class="icon-btn" aria-label="关闭">×</button>
+          </div>
+          <div id="social-target" class="social-target"><span>点击同地图玩家以选中目标</span></div>
+          <div class="social-actions">
+            <button id="btn-friend-add" class="btn tiny">加好友</button>
+            <button id="btn-team-invite" class="btn tiny">邀请组队</button>
+            <button id="btn-guild-invite" class="btn tiny">邀请入会</button>
+            <button id="btn-trade-request" class="btn tiny">发起交易</button>
+            <button id="btn-guild-war" class="btn tiny danger">行会宣战</button>
+            <button id="btn-sabac-declare" class="btn tiny danger">申请攻城</button>
+          </div>
+          <div id="social-requests" class="social-section"></div>
+          <div id="social-friends" class="social-section"></div>
+          <div id="social-team" class="social-section"></div>
+          <div id="social-guild" class="social-section"></div>
+          <div class="guild-create">
+            <input id="guild-name" maxlength="10" placeholder="输入行会名" />
+            <button id="btn-guild-create" class="btn tiny">创建行会</button>
+            <small>20级 · 沃玛号角 ×1 · 1000金币</small>
+          </div>
+          <div id="trade-box" class="trade-box hidden">
+            <div id="trade-summary"></div>
+            <label>金币 <input id="trade-gold" type="number" min="0" value="0" /></label>
+            <p>物品取当前背包中选中的一格；双方确认后由本地服原子交换。</p>
+            <div>
+              <button id="btn-trade-offer" class="btn tiny">提交报价</button>
+              <button id="btn-trade-confirm" class="btn tiny primary">确认交易</button>
+              <button id="btn-trade-cancel" class="btn tiny danger">取消</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="world-map" class="panel world-map hit hidden" aria-label="世界地图与自动寻路">
+          <div class="panel-head">
+            <div><span class="panel-kicker">WORLD MAP</span><h3>玛法大陆 · 九域交通图</h3></div>
+            <button id="btn-world-map-close" class="icon-btn" aria-label="关闭世界地图">×</button>
+          </div>
+          <div class="world-map-body">
+            <div class="world-map-board">
+              <svg id="world-map-routes" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div id="world-map-nodes"></div>
+              <div class="world-map-legend"><span><i class="current"></i>当前位置</span><span><i class="destination"></i>目标地区</span><span><i class="locked"></i>等级不足</span></div>
+            </div>
+            <aside class="world-map-guide">
+              <section id="world-route-summary" class="world-route-summary"></section>
+              <section>
+                <div class="world-guide-title"><span>当前地区出口</span><small id="world-current-copy"></small></div>
+                <div id="world-exit-list" class="world-exit-list"></div>
+              </section>
+              <section id="world-region-detail" class="world-region-detail"></section>
+            </aside>
+          </div>
+        </section>
+
         <section id="shop" class="panel window shop hit hidden" aria-label="商店">
           <div class="panel-head">
             <div><span class="panel-kicker">MERCHANT</span><h3 id="shop-title">比奇杂货铺</h3></div>
             <button id="btn-shop-close" class="icon-btn" aria-label="关闭">×</button>
           </div>
+          <div id="shop-tools" class="shop-tools"><span>铁匠可恢复当前穿戴装备的全部耐久</span><button id="btn-repair" class="btn tiny">修理全部</button></div>
+          <div id="shop-tabs" class="shop-tabs">
+            <button id="btn-shop-stock" class="active">商店货架</button>
+            <button id="btn-item-codex">物品图鉴</button>
+          </div>
+          <input id="item-codex-search" class="item-codex-search hidden" maxlength="24" placeholder="搜索名称、分类、来源或用途" />
           <div id="shop-list" class="shop-list"></div>
+          <div id="craft-section" class="craft-section hidden">
+            <h4>生活制造</h4>
+            <div id="craft-list" class="shop-list"></div>
+          </div>
         </section>
 
         <section id="warehouse" class="panel window warehouse hit hidden" aria-label="仓库">
@@ -163,20 +275,76 @@
           <div id="wh-list" class="shop-list"></div>
         </section>
 
+        <section id="npc-dialogue" class="panel npc-dialogue hit hidden" aria-label="NPC 对话">
+          <div class="npc-dialogue-head">
+            <div><span id="npc-role" class="panel-kicker">BICH NPC</span><h3 id="npc-name">玛法居民</h3></div>
+            <button id="btn-npc-close" class="icon-btn" aria-label="结束对话">×</button>
+          </div>
+          <div class="npc-dialogue-body">
+            <div class="npc-dialogue-portrait"><img id="npc-portrait" alt="" /></div>
+            <div class="npc-dialogue-copy">
+              <p id="npc-text"></p>
+              <small id="npc-note"></small>
+            </div>
+          </div>
+          <div class="npc-dialogue-actions">
+            <button id="btn-npc-action" class="btn primary">继续</button>
+            <button id="btn-npc-leave" class="btn ghost">离开</button>
+          </div>
+        </section>
+
         <section id="settings" class="panel modal hit hidden" aria-label="设置与帮助">
           <div class="panel-head">
             <div><span class="panel-kicker">SYSTEM</span><h3>设置与玩法</h3></div>
             <button id="btn-settings-close" class="icon-btn" aria-label="关闭">×</button>
           </div>
           <div class="setting-row"><span>战斗音效</span><button id="btn-sound" class="toggle">开启</button></div>
+          <label class="setting-row setting-control" for="sound-volume">
+            <span>总音量 <small id="sound-volume-value">80%</small></span>
+            <input id="sound-volume" type="range" min="0" max="100" step="5" value="80" />
+          </label>
+          <label class="setting-row setting-control setting-bus-row" for="music-volume">
+            <span>音乐 <small id="music-volume-value">70%</small></span>
+            <input id="music-volume" data-audio-bus="music" type="range" min="0" max="100" step="5" value="70" />
+          </label>
+          <label class="setting-row setting-control setting-bus-row" for="ambience-volume">
+            <span>环境 <small id="ambience-volume-value">80%</small></span>
+            <input id="ambience-volume" data-audio-bus="ambience" type="range" min="0" max="100" step="5" value="80" />
+          </label>
+          <label class="setting-row setting-control setting-bus-row" for="combat-volume">
+            <span>战斗 <small id="combat-volume-value">100%</small></span>
+            <input id="combat-volume" data-audio-bus="combat" type="range" min="0" max="100" step="5" value="100" />
+          </label>
+          <label class="setting-row setting-control setting-bus-row" for="ui-volume">
+            <span>界面 <small id="ui-volume-value">75%</small></span>
+            <input id="ui-volume" data-audio-bus="ui" type="range" min="0" max="100" step="5" value="75" />
+          </label>
+          <label class="setting-row setting-control" for="dynamic-range">
+            <span>动态范围 <small>夜间模式会压低战斗峰值</small></span>
+            <select id="dynamic-range">
+              <option value="wide">宽广</option>
+              <option value="balanced" selected>均衡</option>
+              <option value="night">夜间</option>
+            </select>
+          </label>
+          <label class="setting-row setting-control" for="render-quality">
+            <span>画面品质 <small>切换时立即生效</small></span>
+            <select id="render-quality">
+              <option value="performance">流畅</option>
+              <option value="balanced" selected>均衡</option>
+              <option value="quality">精细</option>
+            </select>
+          </label>
           <div class="setting-row"><span>全屏显示</span><button id="btn-fullscreen" class="btn tiny">切换全屏</button></div>
           <div class="help-grid">
             <div><kbd>鼠标 / 触屏</kbd><span>移动、锁定怪物、与 NPC 交互</span></div>
             <div><kbd>W A S D</kbd><span>自由移动，Shift 加速奔跑</span></div>
             <div><kbd>1 — 4</kbd><span>释放职业技能</span></div>
             <div><kbd>F1 / F2</kbd><span>使用生命 / 魔法药</span></div>
-            <div><kbd>空格</kbd><span>短跳规避 Boss 法阵</span></div>
-            <div><kbd>B C Y Q</kbd><span>背包、角色、成就、任务</span></div>
+            <div><kbd>空格</kbd><span>普通攻击；攻击帧内无法移动</span></div>
+            <div><kbd>G / H / P</kbd><span>拾取 / 采集附近资源 / 切换PK模式</span></div>
+            <div><kbd>B C K I Y Q</kbd><span>背包、角色、技能、物品图鉴、成就、任务</span></div>
+            <div><kbd>M</kbd><span>打开九域世界地图、查看完整路线并自动寻路</span></div>
           </div>
           <button id="btn-save" class="btn primary wide">立即保存进度</button>
         </section>
@@ -184,7 +352,7 @@
         <section id="death" class="panel modal death hit hidden" aria-label="角色阵亡">
           <span class="death-mark">☠</span>
           <h3>灵魂暂离躯壳</h3>
-          <p>损失本级 10% 经验，将在比奇城复活。</p>
+          <p id="death-copy">损失本级 10% 经验；危险区域可能掉落金币或物品，将在比奇城复活。</p>
           <button id="btn-revive" class="btn primary large">重返玛法</button>
         </section>
 
@@ -192,18 +360,36 @@
           <span>成就解锁</span><strong id="achievement-toast-name">初战告捷</strong>
         </div>
 
-        <div id="mobile-controls" class="mobile-controls hit">
-          <div id="joystick" class="joystick"><div id="joystick-knob"></div></div>
-          <div class="mobile-actions">
-            <button data-skill="2">3</button>
-            <button data-skill="1">2</button>
-            <button data-skill="0" class="attack">1</button>
-            <button id="mobile-jump">跃</button>
+        <div id="mobile-controls" class="mobile-controls hit" aria-label="移动战斗控制">
+          <div id="joystick" class="joystick" aria-label="移动摇杆"><div id="joystick-knob"></div></div>
+          <div class="mobile-action-cluster">
+            <div class="mobile-actions">
+              <button data-skill="3" aria-label="技能四">4</button>
+              <button data-skill="2" aria-label="技能三">3</button>
+              <button id="mobile-mp" aria-label="使用魔法药">蓝</button>
+              <button id="mobile-gather" aria-label="采集资源">采</button>
+              <button data-skill="1" aria-label="技能二">2</button>
+              <button data-skill="0" aria-label="技能一">1</button>
+              <button id="mobile-hp" aria-label="使用金创药">红</button>
+              <button id="mobile-pickup" aria-label="拾取物品">拾</button>
+              <button id="mobile-attack" class="attack" aria-label="普通攻击">攻</button>
+              <button id="mobile-bag" aria-label="打开背包">背</button>
+            </div>
+            <button id="mobile-more" class="mobile-more" aria-label="更多操作" aria-expanded="false" aria-controls="mobile-utility">•••</button>
+            <div id="mobile-utility" class="mobile-utility hidden" aria-label="更多操作菜单">
+              <button id="mobile-chat" aria-label="打开聊天">聊</button>
+              <button id="mobile-world-map" aria-label="打开世界地图">地</button>
+              <button id="mobile-skills" aria-label="打开技能学习">技</button>
+              <button id="mobile-social" aria-label="打开社交">社</button>
+              <button id="mobile-codex" aria-label="打开物品图鉴">图</button>
+              <button id="mobile-pk" aria-label="切换PK模式">PK</button>
+              <button id="mobile-settings" aria-label="打开设置">设</button>
+            </div>
           </div>
         </div>
       </div>
     </section>
   </div>
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=0.9.16"></script>
 </body>
 </html>

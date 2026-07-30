@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "role": "wolf",
+  "authoredDirections": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "actions": {
+    "idle": {
+      "e": 4,
+      "se": 4,
+      "s": 4,
+      "sw": 4,
+      "w": 4,
+      "nw": 4,
+      "n": 4,
+      "ne": 4
+    },
+    "walk": {
+      "e": 4,
+      "se": 4,
+      "s": 4,
+      "sw": 4,
+      "w": 4,
+      "nw": 4,
+      "n": 4,
+      "ne": 4
+    },
+    "attack": {
+      "e": 4,
+      "se": 4,
+      "s": 4,
+      "sw": 4,
+      "w": 4,
+      "nw": 4,
+      "n": 4,
+      "ne": 4
+    },
+    "death": {
+      "e": 4,
+      "se": 4,
+      "s": 4,
+      "sw": 4,
+      "w": 4,
+      "nw": 4,
+      "n": 4,
+      "ne": 4
+    }
+  },
+  "frameSize": [
+    384,
+    256
+  ],
+  "anchor": {
+    "rootX": 192,
+    "contactY": 236
+  },
+  "oneShots": [
+    "attack",
+    "death"
+  ],
+  "loops": [
+    "idle",
+    "walk"
+  ],
+  "sources": {
+    "e": "call_PDJ3o4Wv86Fwfors6WbrlauN",
+    "se": "call_gZn82nQERpbsmhnJuCxg6QAy",
+    "s": "call_goCQZ4kKsFXagcfgEa2U3i8D",
+    "sw": "call_dnwinjVJScdgsZjGuHXypmWn",
+    "w": "call_S5toupG3lCuXNvYDQWy6Jz2j",
+    "nw": "call_YkDhX4ldwizZ7KDFld25uNfQ",
+    "n": "call_I0dTSKLD5Hlvttjky4hVoSzj",
+    "ne": "call_TGoB0TvkRU61h8vJM9mDn1Rt",
+    "n_attack_retry": "call_yJG4ech4JcGYtz9J0MHT909z"
+  },
+  "sourceOverrides": {
+    "n/attack": {
+      "file": "n_attack_retry.png",
+      "row": 0
+    }
+  },
+  "directionScales": {
+    "e": 0.892019,
+    "se": 0.906921,
+    "s": 0.877598,
+    "sw": 0.939086,
+    "w": 1.03352,
+    "nw": 0.992167,
+    "n": 0.947631,
+    "ne": 0.883721
+  },
+  "qa": {
+    "status": "pass",
+    "strictScore": 100,
+    "failures": [],
+    "warnings": [],
+    "criteria": {
+      "explicitFrames": 128,
+      "sourceCellMarginMin": 3,
+      "outputMarginMin": 7,
+      "loopContactSpreadMax": 2.5,
+      "loopRootSpreadMax": 4.0,
+      "deathFinalProneRatioMax": 0.78,
+      "magentaPixelsMax": 8,
+      "idleHeightMin": 160,
+      "crossDirectionIdleHeightRatioMax": 1.16
+    },
+    "sheets": {
+      "chronology": "wolf/wolf_all_directions_actions.png",
+      "bboxAnchor": "wolf/wolf_bbox_anchor.png",
+      "multibg": [
+        "wolf/wolf_e_multibg.png",
+        "wolf/wolf_se_multibg.png",
+        "wolf/wolf_s_multibg.png",
+        "wolf/wolf_sw_multibg.png",
+        "wolf/wolf_w_multibg.png",
+        "wolf/wolf_nw_multibg.png",
+        "wolf/wolf_n_multibg.png",
+        "wolf/wolf_ne_multibg.png"
+      ],
+      "footCrops": [
+        "wolf/wolf_foot_crops_red.png",
+        "wolf/wolf_foot_crops_blue.png"
+      ]
+    }
+  }
+}

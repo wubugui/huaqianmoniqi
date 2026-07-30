@@ -1,14 +1,15 @@
 {
   "name": "mini-legend",
-  "version": "0.3.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "description": "玛法余烬 · 沙城纪元 — 浏览器端复古 2D 动作角色扮演游戏",
   "scripts": {
-    "start": "python3 -m http.server 8080",
-    "serve": "python3 -m http.server 8080",
+    "start": "node server/local-server.mjs",
+    "serve": "node server/local-server.mjs",
+    "serve:static": "python3 -m http.server 8080",
     "build": "node scripts/build.mjs",
-    "test": "node tests/game.test.mjs && node tests/sim.test.mjs && node tests/progression.test.mjs && node tests/anim.test.mjs",
+    "test": "node tests/game.test.mjs && node tests/sim.test.mjs && node tests/progression.test.mjs && node tests/skills.test.mjs && node tests/equipment.test.mjs && node tests/loot-pk.test.mjs && node tests/content-gathering.test.mjs && node tests/server.test.mjs && node tests/server-authority.test.mjs && node tests/server-pve-authority.test.mjs && node tests/server-transactions.test.mjs && node tests/server-class-combat.test.mjs && node tests/monster-ecology.test.mjs && node tests/economy-loop.test.mjs && node tests/long-term-loop.test.mjs && node tests/network.test.mjs && node tests/server-network.test.mjs && node tests/persistence.test.mjs && node tests/server-stress.test.mjs && node tests/server-live-stress.test.mjs && node tests/social.test.mjs && node tests/warfare.test.mjs && node tests/anim.test.mjs && node tests/audio.test.mjs",
     "process-assets": ".venv/bin/python scripts/process_assets.py",
     "anim:from-video": ".venv/bin/python scripts/video_to_frames.py --all --fps 10"
   }

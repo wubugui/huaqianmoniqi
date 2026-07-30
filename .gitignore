@@ -6,9 +6,15 @@ node_modules/
 .idea/
 .vscode/
 *.log
+.local/
 dist/
+.claude/
 *.tar.gz
 assets/generated/
 assets/legend/
 asset-backups/
 assets/game/scenery/raw/
+assets/game/scenery/source/
+assets/game/**/qa/
+assets/game/**/staging/
+assets/game/**/rejected/

@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "role": "deer",
+  "authoredDirections": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "actions": {
+    "idle": {
+      "e": 4,
+      "se": 4,
+      "s": 4,
+      "sw": 4,
+      "w": 4,
+      "nw": 4,
+      "n": 4,
+      "ne": 4
+    },
+    "walk": {
+      "e": 4,
+      "se": 4,
+      "s": 4,
+      "sw": 4,
+      "w": 4,
+      "nw": 4,
+      "n": 4,
+      "ne": 4
+    },
+    "attack": {
+      "e": 4,
+      "se": 4,
+      "s": 4,
+      "sw": 4,
+      "w": 4,
+      "nw": 4,
+      "n": 4,
+      "ne": 4
+    },
+    "death": {
+      "e": 4,
+      "se": 4,
+      "s": 4,
+      "sw": 4,
+      "w": 4,
+      "nw": 4,
+      "n": 4,
+      "ne": 4
+    }
+  },
+  "frameSize": [
+    384,
+    256
+  ],
+  "anchor": {
+    "rootX": 192,
+    "contactY": 236
+  },
+  "oneShots": [
+    "attack",
+    "death"
+  ],
+  "loops": [
+    "idle",
+    "walk"
+  ],
+  "sources": {
+    "e": "call_Uw5VGIdd9CDXtTBzMKAb48fw",
+    "se": "call_KDfKyGW2EgSCME8dpA8N5IZQ",
+    "s": "call_2EQYuhcTXMQ3zeslcL0n4XNv",
+    "sw": "call_a55bpcwdKg2utMN2M4tszE9F",
+    "w": "call_sv1mj70yILw1o1xz5kExLroH",
+    "nw": "call_nKybQbCkntmgyCCy9rmgc4qR",
+    "n": "call_gByyXVaw35T1aKVSkok9UPMR",
+    "ne": "call_xRkXUrGGMM1uKTUS9pA4LFcr",
+    "e_attack_retry": "call_foPHygi2RAFgn3Q9UlGgYcdk"
+  },
+  "sourceOverrides": {
+    "e/attack": {
+      "file": "e_attack_retry.png",
+      "row": 0
+    }
+  },
+  "loopRotations": {
+    "e/idle": 2,
+    "s/walk": 1
+  },
+  "directionScales": {
+    "e": 0.785124,
+    "se": 0.813704,
+    "s": 0.763052,
+    "sw": 0.773931,
+    "w": 0.833333,
+    "nw": 0.815451,
+    "n": 0.840708,
+    "ne": 0.87156
+  },
+  "qa": {
+    "status": "pass",
+    "strictScore": 100,
+    "failures": [],
+    "warnings": [],
+    "criteria": {
+      "explicitFrames": 128,
+      "sourceCellMarginMin": 3,
+      "outputMarginMin": 7,
+      "loopContactSpreadMax": 2.5,
+      "loopRootSpreadMax": 4.0,
+      "deathFinalProneRatioMax": 0.78,
+      "magentaPixelsMax": 8,
+      "idleHeightMin": 160,
+      "crossDirectionIdleHeightRatioMax": 1.16,
+      "loopSeamRatioMax": 1.5,
+      "minMotionRatioMin": 0.3
+    },
+    "sheets": {
+      "chronology": "deer/deer_all_directions_actions.png",
+      "bboxAnchor": "deer/deer_bbox_anchor.png",
+      "multibg": [
+        "deer/deer_e_multibg.png",
+        "deer/deer_se_multibg.png",
+        "deer/deer_s_multibg.png",
+        "deer/deer_sw_multibg.png",
+        "deer/deer_w_multibg.png",
+        "deer/deer_nw_multibg.png",
+        "deer/deer_n_multibg.png",
+        "deer/deer_ne_multibg.png"
+      ],
+      "footCrops": [
+        "deer/deer_foot_crops_red.png",
+        "deer/deer_foot_crops_blue.png"
+      ]
+    }
+  }
+}

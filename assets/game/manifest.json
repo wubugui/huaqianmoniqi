@@ -10,7 +10,10 @@
     "skeleton": "assets/game/mob/skeleton.png",
     "orc": "assets/game/mob/orc.png",
     "bat": "assets/game/mob/bat.png",
-    "guardian": "assets/game/mob/guardian.png"
+    "guardian": "assets/game/mob/guardian.png",
+    "wolf": "assets/game/mob/wolf.png",
+    "boar": "assets/game/mob/boar.png",
+    "centipede": "assets/game/mob/centipede.png"
   },
   "npc": {
     "healer": "assets/game/npc/healer.png",
@@ -21,6 +24,17 @@
     "town": "assets/game/map/town.jpg",
     "field": "assets/game/map/field.jpg",
     "temple": "assets/game/map/temple.jpg"
+  },
+  "ground": {
+    "bich": "assets/game/map/ground/bich.png",
+    "field": "assets/game/map/ground/field.png",
+    "valley": "assets/game/map/ground/valley.png",
+    "cave": "assets/game/map/ground/cave.png",
+    "stone_tomb": "assets/game/map/ground/stone-tomb.png",
+    "centipede_cave": "assets/game/map/ground/centipede-cave.png",
+    "temple": "assets/game/map/ground/temple.png",
+    "sanctum": "assets/game/map/ground/sanctum.png",
+    "sabac": "assets/game/map/ground/sabac.png"
   },
   "anim": {
     "warrior": {
@@ -190,5 +204,301 @@
     "taoist/run": "assets/generated/videos/taoist_run.mp4",
     "taoist/jump": "assets/generated/videos/taoist_jump.mp4",
     "taoist/attack": "assets/generated/videos/taoist_attack.mp4"
+  },
+  "npcAnim": {
+    "healer": {
+      "idle": [
+        "assets/game/anim/npc/healer/idle/00.png",
+        "assets/game/anim/npc/healer/idle/01.png",
+        "assets/game/anim/npc/healer/idle/02.png",
+        "assets/game/anim/npc/healer/idle/03.png"
+      ]
+    },
+    "merchant": {
+      "idle": [
+        "assets/game/anim/npc/merchant/idle/00.png",
+        "assets/game/anim/npc/merchant/idle/01.png",
+        "assets/game/anim/npc/merchant/idle/02.png",
+        "assets/game/anim/npc/merchant/idle/03.png"
+      ]
+    },
+    "warehouse": {
+      "idle": [
+        "assets/game/anim/npc/warehouse/idle/00.png",
+        "assets/game/anim/npc/warehouse/idle/01.png",
+        "assets/game/anim/npc/warehouse/idle/02.png",
+        "assets/game/anim/npc/warehouse/idle/03.png"
+      ]
+    },
+    "captain": {
+      "idle": [
+        "assets/game/anim/npc/captain/idle/00.png",
+        "assets/game/anim/npc/captain/idle/01.png",
+        "assets/game/anim/npc/captain/idle/02.png",
+        "assets/game/anim/npc/captain/idle/03.png"
+      ]
+    }
+  },
+  "mobAnim": {
+    "deer": {
+      "idle": [
+        "assets/game/anim/mob/deer/idle/00.png",
+        "assets/game/anim/mob/deer/idle/01.png",
+        "assets/game/anim/mob/deer/idle/02.png",
+        "assets/game/anim/mob/deer/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/deer/walk/00.png",
+        "assets/game/anim/mob/deer/walk/01.png",
+        "assets/game/anim/mob/deer/walk/02.png",
+        "assets/game/anim/mob/deer/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/deer/attack/00.png",
+        "assets/game/anim/mob/deer/attack/01.png",
+        "assets/game/anim/mob/deer/attack/02.png",
+        "assets/game/anim/mob/deer/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/deer/death/00.png",
+        "assets/game/anim/mob/deer/death/01.png",
+        "assets/game/anim/mob/deer/death/02.png",
+        "assets/game/anim/mob/deer/death/03.png"
+      ]
+    },
+    "zombie": {
+      "idle": [
+        "assets/game/anim/mob/zombie/idle/00.png",
+        "assets/game/anim/mob/zombie/idle/01.png",
+        "assets/game/anim/mob/zombie/idle/02.png",
+        "assets/game/anim/mob/zombie/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/zombie/walk/00.png",
+        "assets/game/anim/mob/zombie/walk/01.png",
+        "assets/game/anim/mob/zombie/walk/02.png",
+        "assets/game/anim/mob/zombie/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/zombie/attack/00.png",
+        "assets/game/anim/mob/zombie/attack/01.png",
+        "assets/game/anim/mob/zombie/attack/02.png",
+        "assets/game/anim/mob/zombie/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/zombie/death/00.png",
+        "assets/game/anim/mob/zombie/death/01.png",
+        "assets/game/anim/mob/zombie/death/02.png",
+        "assets/game/anim/mob/zombie/death/03.png"
+      ]
+    },
+    "skeleton": {
+      "idle": [
+        "assets/game/anim/mob/skeleton/idle/00.png",
+        "assets/game/anim/mob/skeleton/idle/01.png",
+        "assets/game/anim/mob/skeleton/idle/02.png",
+        "assets/game/anim/mob/skeleton/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/skeleton/walk/00.png",
+        "assets/game/anim/mob/skeleton/walk/01.png",
+        "assets/game/anim/mob/skeleton/walk/02.png",
+        "assets/game/anim/mob/skeleton/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/skeleton/attack/00.png",
+        "assets/game/anim/mob/skeleton/attack/01.png",
+        "assets/game/anim/mob/skeleton/attack/02.png",
+        "assets/game/anim/mob/skeleton/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/skeleton/death/00.png",
+        "assets/game/anim/mob/skeleton/death/01.png",
+        "assets/game/anim/mob/skeleton/death/02.png",
+        "assets/game/anim/mob/skeleton/death/03.png"
+      ]
+    },
+    "bat": {
+      "idle": [
+        "assets/game/anim/mob/bat/idle/00.png",
+        "assets/game/anim/mob/bat/idle/01.png",
+        "assets/game/anim/mob/bat/idle/02.png",
+        "assets/game/anim/mob/bat/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/bat/walk/00.png",
+        "assets/game/anim/mob/bat/walk/01.png",
+        "assets/game/anim/mob/bat/walk/02.png",
+        "assets/game/anim/mob/bat/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/bat/attack/00.png",
+        "assets/game/anim/mob/bat/attack/01.png",
+        "assets/game/anim/mob/bat/attack/02.png",
+        "assets/game/anim/mob/bat/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/bat/death/00.png",
+        "assets/game/anim/mob/bat/death/01.png",
+        "assets/game/anim/mob/bat/death/02.png",
+        "assets/game/anim/mob/bat/death/03.png"
+      ]
+    },
+    "orc": {
+      "idle": [
+        "assets/game/anim/mob/orc/idle/00.png",
+        "assets/game/anim/mob/orc/idle/01.png",
+        "assets/game/anim/mob/orc/idle/02.png",
+        "assets/game/anim/mob/orc/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/orc/walk/00.png",
+        "assets/game/anim/mob/orc/walk/01.png",
+        "assets/game/anim/mob/orc/walk/02.png",
+        "assets/game/anim/mob/orc/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/orc/attack/00.png",
+        "assets/game/anim/mob/orc/attack/01.png",
+        "assets/game/anim/mob/orc/attack/02.png",
+        "assets/game/anim/mob/orc/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/orc/death/00.png",
+        "assets/game/anim/mob/orc/death/01.png",
+        "assets/game/anim/mob/orc/death/02.png",
+        "assets/game/anim/mob/orc/death/03.png"
+      ]
+    },
+    "guardian": {
+      "idle": [
+        "assets/game/anim/mob/guardian/idle/00.png",
+        "assets/game/anim/mob/guardian/idle/01.png",
+        "assets/game/anim/mob/guardian/idle/02.png",
+        "assets/game/anim/mob/guardian/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/guardian/walk/00.png",
+        "assets/game/anim/mob/guardian/walk/01.png",
+        "assets/game/anim/mob/guardian/walk/02.png",
+        "assets/game/anim/mob/guardian/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/guardian/attack/00.png",
+        "assets/game/anim/mob/guardian/attack/01.png",
+        "assets/game/anim/mob/guardian/attack/02.png",
+        "assets/game/anim/mob/guardian/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/guardian/death/00.png",
+        "assets/game/anim/mob/guardian/death/01.png",
+        "assets/game/anim/mob/guardian/death/02.png",
+        "assets/game/anim/mob/guardian/death/03.png"
+      ]
+    },
+    "lord": {
+      "idle": [
+        "assets/game/anim/mob/lord/idle/00.png",
+        "assets/game/anim/mob/lord/idle/01.png",
+        "assets/game/anim/mob/lord/idle/02.png",
+        "assets/game/anim/mob/lord/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/lord/walk/00.png",
+        "assets/game/anim/mob/lord/walk/01.png",
+        "assets/game/anim/mob/lord/walk/02.png",
+        "assets/game/anim/mob/lord/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/lord/attack/00.png",
+        "assets/game/anim/mob/lord/attack/01.png",
+        "assets/game/anim/mob/lord/attack/02.png",
+        "assets/game/anim/mob/lord/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/lord/death/00.png",
+        "assets/game/anim/mob/lord/death/01.png",
+        "assets/game/anim/mob/lord/death/02.png",
+        "assets/game/anim/mob/lord/death/03.png"
+      ]
+    },
+    "wolf": {
+      "idle": [
+        "assets/game/anim/mob/wolf/idle/00.png",
+        "assets/game/anim/mob/wolf/idle/01.png",
+        "assets/game/anim/mob/wolf/idle/02.png",
+        "assets/game/anim/mob/wolf/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/wolf/walk/00.png",
+        "assets/game/anim/mob/wolf/walk/01.png",
+        "assets/game/anim/mob/wolf/walk/02.png",
+        "assets/game/anim/mob/wolf/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/wolf/attack/00.png",
+        "assets/game/anim/mob/wolf/attack/01.png",
+        "assets/game/anim/mob/wolf/attack/02.png",
+        "assets/game/anim/mob/wolf/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/wolf/death/00.png",
+        "assets/game/anim/mob/wolf/death/01.png",
+        "assets/game/anim/mob/wolf/death/02.png",
+        "assets/game/anim/mob/wolf/death/03.png"
+      ]
+    },
+    "boar": {
+      "idle": [
+        "assets/game/anim/mob/boar/idle/00.png",
+        "assets/game/anim/mob/boar/idle/01.png",
+        "assets/game/anim/mob/boar/idle/02.png",
+        "assets/game/anim/mob/boar/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/boar/walk/00.png",
+        "assets/game/anim/mob/boar/walk/01.png",
+        "assets/game/anim/mob/boar/walk/02.png",
+        "assets/game/anim/mob/boar/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/boar/attack/00.png",
+        "assets/game/anim/mob/boar/attack/01.png",
+        "assets/game/anim/mob/boar/attack/02.png",
+        "assets/game/anim/mob/boar/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/boar/death/00.png",
+        "assets/game/anim/mob/boar/death/01.png",
+        "assets/game/anim/mob/boar/death/02.png",
+        "assets/game/anim/mob/boar/death/03.png"
+      ]
+    },
+    "centipede": {
+      "idle": [
+        "assets/game/anim/mob/centipede/idle/00.png",
+        "assets/game/anim/mob/centipede/idle/01.png",
+        "assets/game/anim/mob/centipede/idle/02.png",
+        "assets/game/anim/mob/centipede/idle/03.png"
+      ],
+      "walk": [
+        "assets/game/anim/mob/centipede/walk/00.png",
+        "assets/game/anim/mob/centipede/walk/01.png",
+        "assets/game/anim/mob/centipede/walk/02.png",
+        "assets/game/anim/mob/centipede/walk/03.png"
+      ],
+      "attack": [
+        "assets/game/anim/mob/centipede/attack/00.png",
+        "assets/game/anim/mob/centipede/attack/01.png",
+        "assets/game/anim/mob/centipede/attack/02.png",
+        "assets/game/anim/mob/centipede/attack/03.png"
+      ],
+      "death": [
+        "assets/game/anim/mob/centipede/death/00.png",
+        "assets/game/anim/mob/centipede/death/01.png",
+        "assets/game/anim/mob/centipede/death/02.png",
+        "assets/game/anim/mob/centipede/death/03.png"
+      ]
+    }
   }
 }
