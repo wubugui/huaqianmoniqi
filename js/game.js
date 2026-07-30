@@ -4497,15 +4497,7 @@ export class Game {
           continue;
         }
         const groundCover = d.ecology === 'understory' || d.ecology === 'road-verge';
-        const shadowW = d.shadowW
-          || (['house_a', 'house_b'].includes(d.id) ? Math.min(118, d.h * 0.28) : Math.min(54, d.h * 0.19));
         const isGrove = d.id.startsWith('grove_');
-        if (!groundCover) {
-          ctx.fillStyle = isGrove ? 'rgba(4,6,3,0.15)' : 'rgba(4,3,2,0.24)';
-          ctx.beginPath();
-          ctx.ellipse(foot.x, foot.y + 3, shadowW, Math.max(5, shadowW * (isGrove ? 0.15 : 0.22)), 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
         const treeFamily = ['tree', 'pine'].includes(d.id)
           || d.id.startsWith('tree_')
           || d.id.startsWith('pine_');
