@@ -1,4 +1,4 @@
-import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.17';
+import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.18';
 import {
   ACHIEVEMENTS, BOUNTIES, ENHANCE_MAX, EQUIP_SLOTS, ITEM_TYPE_NAMES, MAPS, MONSTERS, RARITIES, SKILL_LEVEL_XP, SKILL_MAX_LEVEL,
   SLOT_NAMES, WORLD, enhanceCost,
@@ -69,10 +69,19 @@ let routeLegTo = null;
 let lastRouteMapId = null;
 let routeContinueTimer = 0;
 let gameLaunchPending = false;
+let spaceAttackArmed = true;
 const localChatNotices = [];
 const handledNetworkEvents = new Set();
 const pendingSkillLearning = new Set();
 const held = new Set();
+
+function triggerBasicAttack() {
+  if (!game) return;
+  // Keep the skill-bar button from retaining focus; a focused <button> turns
+  // subsequent Space keydowns into browser-generated click repeats.
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+  game.attackNearest();
+}
 
 function show(name) {
   Object.values(screens).forEach((el) => el.classList.remove('active'));
@@ -730,11 +739,19 @@ function buildSkills() {
   const bar = $('#skill-bar');
   bar.innerHTML = '';
   const basic = document.createElement('button');
+  basic.type = 'button';
   basic.className = 'basic-attack ready';
   basic.innerHTML = '<span class="skill-icon" aria-hidden="true"></span><span class="skill-glyph" aria-hidden="true">⚔</span><span class="k">空格</span><span class="skill-name">普通攻击</span><span class="skill-level">Lv.1</span>';
   basic.title = '普通攻击从1级即可使用，不需要技能书';
   basic.setAttribute('aria-label', '空格 普通攻击，1级可用');
-  basic.onclick = () => game?.attackNearest();
+  basic.onpointerdown = (event) => {
+    event.preventDefault();
+    triggerBasicAttack();
+  };
+  // Space on a focused button synthesizes click repeats in Chromium/WebKit.
+  basic.onkeydown = (event) => {
+    if (event.code === 'Space' || event.key === ' ') event.preventDefault();
+  };
   bar.appendChild(basic);
   game.player.def.skills.forEach((skill, index) => {
     const button = document.createElement('button');
@@ -1839,7 +1856,12 @@ function wireGameInput() {
       event.preventDefault(); held.add(key); updateMovement();
     }
     if (event.key === 'Shift') game.setRun(true);
-    if (event.code === 'Space') { event.preventDefault(); game.attackNearest(); }
+    if (event.code === 'Space' || key === ' ') {
+      event.preventDefault();
+      if (event.repeat || !spaceAttackArmed) return;
+      spaceAttackArmed = false;
+      triggerBasicAttack();
+    }
     if (['1', '2', '3', '4'].includes(key)) useSkill(Number(key) - 1);
     if (key === 'b') openPanel('bag');
     if (key === 'c') openPanel('character');
@@ -1865,6 +1887,7 @@ function wireGameInput() {
     held.delete(key);
     updateMovement();
     if (event.key === 'Shift') game?.setRun(false);
+    if (event.code === 'Space' || key === ' ') spaceAttackArmed = true;
   };
   window.onblur = () => {
     held.clear();
@@ -1882,7 +1905,7 @@ function wireGameInput() {
   document.querySelectorAll('[data-skill]').forEach((button) => {
     button.onpointerdown = (event) => { event.preventDefault(); useSkill(Number(button.dataset.skill)); };
   });
-  $('#mobile-attack').onpointerdown = (event) => { event.preventDefault(); game?.attackNearest(); };
+  $('#mobile-attack').onpointerdown = (event) => { event.preventDefault(); triggerBasicAttack(); };
   $('#mobile-pickup').onpointerdown = (event) => { event.preventDefault(); game?.pickupNearestDrop(); };
   $('#mobile-gather').onpointerdown = (event) => { event.preventDefault(); game?.gatherNearest(); };
   $('#mobile-hp').onpointerdown = (event) => { event.preventDefault(); usePotion('hp'); };

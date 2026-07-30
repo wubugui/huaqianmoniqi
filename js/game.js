@@ -1349,6 +1349,13 @@ export class Game {
     victim.anim = 'death';
     victim.animFrame = 0;
     victim.attacking = false;
+    // Drop the lock on death so a single Space press cannot chain into the
+    // next nearest monster via focused-button / key-repeat side channels.
+    if (this.player?.target === victim) {
+      this.player.target = null;
+      this.player.combatAction = null;
+      this.player.attacking = false;
+    }
     if (victim.type === 'monster') {
       this.spawnEffect(
         victim.x,
