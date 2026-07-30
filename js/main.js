@@ -1,4 +1,4 @@
-import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.20';
+import { Game, loadAssets, CLASSES, ITEMS, SHOP, QUESTS, RECIPES } from './game.js?v=0.9.21';
 import {
   ACHIEVEMENTS, BOUNTIES, ENHANCE_MAX, EQUIP_SLOTS, ITEM_TYPE_NAMES, MAPS, MONSTERS, RARITIES, SKILL_LEVEL_XP, SKILL_MAX_LEVEL,
   SLOT_NAMES, WORLD, enhanceCost,
