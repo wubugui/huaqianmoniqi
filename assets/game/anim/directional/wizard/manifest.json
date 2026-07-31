@@ -1,0 +1,71 @@
+{
+  "classId": "wizard",
+  "canvas": [
+    256,
+    256
+  ],
+  "anchor": [
+    128,
+    236
+  ],
+  "frameCount": 6,
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "actions": [
+    "idle",
+    "walk",
+    "run",
+    "attack"
+  ],
+  "counts": {
+    "idle": {
+      "e": 6,
+      "se": 6,
+      "s": 6,
+      "sw": 6,
+      "w": 6,
+      "nw": 6,
+      "n": 6,
+      "ne": 6
+    },
+    "walk": {
+      "e": 6,
+      "se": 6,
+      "s": 6,
+      "sw": 6,
+      "w": 6,
+      "nw": 6,
+      "n": 6,
+      "ne": 6
+    },
+    "run": {
+      "e": 6,
+      "se": 6,
+      "s": 6,
+      "sw": 6,
+      "w": 6,
+      "nw": 6,
+      "n": 6,
+      "ne": 6
+    },
+    "attack": {
+      "e": 6,
+      "se": 6,
+      "s": 6,
+      "sw": 6,
+      "w": 6,
+      "nw": 6,
+      "n": 6,
+      "ne": 6
+    }
+  },
+  "standard": "commercial-mir-regen-v1"
+}

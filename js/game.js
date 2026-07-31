@@ -12,7 +12,7 @@ import {
   pickPlayerAnim, pickMonsterAnim, animFps, monsterAnimFps, direction8, directionalFrameCount,
   mobDirectionalFrameCount, contactFramesFor, contactFrameCrossings,
   PLAYER_DIRECTIONAL_SPECS, MOB_DIRECTIONAL_SPECS, ANIM_ACTIONS, MOB_ANIM_ACTIONS,
-} from './anim.js?v=0.9.14';
+} from './anim.js?v=0.9.28';
 import { findTilePath } from './navigation.js?v=0.9.11';
 
 const T = WORLD.tile;
